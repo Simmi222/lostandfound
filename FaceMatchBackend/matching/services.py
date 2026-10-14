@@ -1,4 +1,5 @@
-
+import os
+import requests
 from __future__ import annotations
 try:
     # pyrefly: ignore [missing-import]
@@ -15,8 +16,31 @@ from django.db import connection, transaction
 
 logger = logging.getLogger(__name__)
 
+
+def get_face_encoding(image_url: str) -> Optional[list]:
+    """Get a face encoding from the Modal API."""
+
+    api_url = os.environ["FACE_MATCH_API_URL"]
+    api_key = os.environ["FACE_MATCH_API_KEY"]
+
+    response = requests.post(
+        api_url,
+        headers={
+            "Authorization": f"Bearer {api_key}",
+        },
+        json={"image_url": image_url},
+        timeout=90,
+    )
+
+    response.raise_for_status()
+    result = response.json()
+
+    return result["encoding"]
+
+
 MATCH_TOLERANCE: float = getattr(settings, "FACE_MATCH_TOLERANCE", 0.58)
-ALGORITHM_VERSION = "opencv_dct_v1" if face_recognition is None else "face_recognition_v1"
+# ALGORITHM_VERSION = "opencv_dct_v1" if face_recognition is None else "face_recognition_v1"
+ALGORITHM_VERSION = "face_recognition_v1"
 
 _FRONTAL_CASCADE = None
 _PROFILE_CASCADE = None
@@ -277,7 +301,7 @@ def save_photo_and_match(report, uploaded_file):
     )
 
     try:
-        encoding = extract_face_encoding(photo.photo.path)
+        encoding = get_face_encoding(photo.photo.url)
     except Exception as exc:
         photo.processing_status = ReportPhoto.ProcessingStatus.ERROR
         photo.save(update_fields=["processing_status"])
