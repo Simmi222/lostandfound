@@ -1,0 +1,38 @@
+# Virtual Environments
+venv/
+.venv/
+env/
+ENV/
+**/venv/
+**/.venv/
+
+# Node / Frontend
+node_modules/
+**/node_modules/
+dist/
+**/dist/
+build/
+*.tsbuildinfo
+
+# Python cache & compiled
+__pycache__/
+**/__pycache__/
+*.py[cod]
+*$py.class
+
+# Database & local secrets
+*.sqlite3
+db.sqlite3
+.env
+.env.local
+*.env
+!.env.example
+
+# Media & uploaded test data (optional)
+# **/media/
+
+# IDE & OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
