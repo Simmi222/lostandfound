@@ -130,6 +130,81 @@ input, textarea, select { font: inherit; color: inherit; }
   background: rgba(243, 231, 211, 0.08);
   z-index: -1;
 }
+
+.nav-search-form {
+  display: flex;
+  align-items: center;
+  margin: 0 4px;
+}
+.nav-search-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 38px;
+  padding: 0 16px;
+  border-radius: 9999px;
+  background: #170f0a;
+  border: 1.5px solid #d97736;
+  box-shadow: 0 0 10px rgba(217, 119, 54, 0.15);
+  transition: all 0.25s var(--ease);
+}
+.nav-search-pill:hover,
+.nav-search-pill:focus-within {
+  border-color: #f0a94a;
+  box-shadow: 0 0 14px rgba(240, 169, 74, 0.35);
+  background: #1c120c;
+}
+.nav-search-pill svg {
+  color: #f0a94a;
+  flex-shrink: 0;
+}
+.nav-search-input {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--ink);
+  font-size: 13.5px;
+  font-family: var(--sans);
+  width: 185px;
+  transition: width 0.3s var(--ease);
+}
+.nav-search-input:focus {
+  width: 220px;
+}
+.nav-search-input::placeholder {
+  color: rgba(243, 231, 211, 0.45);
+}
+.nav-search-clear {
+  color: var(--ink-3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 2px;
+  transition: color 0.2s;
+}
+.nav-search-clear:hover {
+  color: var(--ink);
+}
+
+.nav-search-camera-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--candle);
+  cursor: pointer;
+  padding: 3px 5px;
+  border-radius: 999px;
+  transition: all 0.2s var(--ease);
+  opacity: 0.85;
+}
+.nav-search-camera-btn:hover {
+  opacity: 1;
+  color: #ffd59a;
+  background: rgba(240, 169, 74, 0.15);
+  transform: scale(1.08);
+}
+
 .nav .nav-menu-btn { display: none; }
 @media (max-width: 860px) {
   .nav-links { display: none; }
@@ -146,6 +221,9 @@ input, textarea, select { font: inherit; color: inherit; }
     border-radius: 20px;
   }
   .nav-links.open .nav-link { font-size: 18px; padding: 14px; }
+  .nav-search-form { width: 100%; margin: 8px 0; }
+  .nav-search-pill { width: 100%; }
+  .nav-search-input { width: 100% !important; }
 }
 
 .btn {

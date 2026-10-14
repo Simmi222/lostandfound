@@ -36,8 +36,8 @@ def _reports_for_kind(kind, request):
 
 class MissingReportListCreateView(generics.ListCreateAPIView):
     """
-    GET  /api/reports/missing/   — list all active missing reports
-    POST /api/reports/missing/   — create a new missing report
+    GET  /api/reports/missing/   — list all active missing reports (public)
+    POST /api/reports/missing/   — create a new missing report (requires login & relative)
     """
     serializer_class = PersonReportSerializer
     parser_classes   = [MultiPartParser, FormParser]
@@ -45,7 +45,7 @@ class MissingReportListCreateView(generics.ListCreateAPIView):
     def get_permissions(self):
         if self.request.method == "POST":
             return [IsRelative()]
-        return [permissions.IsAuthenticated()]
+        return [permissions.AllowAny()]
 
     def get_queryset(self):
         return _reports_for_kind("MISSING", self.request)
@@ -57,7 +57,7 @@ class MissingReportListCreateView(generics.ListCreateAPIView):
 class MissingReportDetailView(generics.RetrieveAPIView):
     """GET /api/reports/missing/{id}/"""
     serializer_class = PersonReportSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]
 
     def get_queryset(self):
         return PersonReport.objects.filter(kind="MISSING", is_active=True)
@@ -96,12 +96,16 @@ class MissingReportCloseView(APIView):
 
 class FoundReportListCreateView(generics.ListCreateAPIView):
     """
-    GET  /api/reports/found/   — list all active found reports
-    POST /api/reports/found/   — create a new found report
+    GET  /api/reports/found/   — list all active found reports (public)
+    POST /api/reports/found/   — create a new found report (requires login)
     """
     serializer_class = PersonReportSerializer
     parser_classes   = [MultiPartParser, FormParser]
-    permission_classes = [permissions.IsAuthenticated]
+
+    def get_permissions(self):
+        if self.request.method == "POST":
+            return [permissions.IsAuthenticated()]
+        return [permissions.AllowAny()]
 
     def get_queryset(self):
         return _reports_for_kind("FOUND", self.request)
@@ -113,7 +117,7 @@ class FoundReportListCreateView(generics.ListCreateAPIView):
 class FoundReportDetailView(generics.RetrieveAPIView):
     """GET /api/reports/found/{id}/"""
     serializer_class   = PersonReportSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]
 
     def get_queryset(self):
         return PersonReport.objects.filter(kind="FOUND", is_active=True)

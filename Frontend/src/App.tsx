@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Route, Routes, useLocation } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import Lenis from 'lenis'
-import { Nav, Preloader, SampleNote } from './components/Chrome'
+import { Nav, Preloader } from './components/Chrome'
 import { Cursor } from './components/ui'
 import Home from './pages/Home'
 import Stories from './pages/Stories'
@@ -10,6 +10,7 @@ import PersonPage from './pages/Person'
 import Report from './pages/Report'
 import Search from './pages/Search'
 import Dashboard from './pages/Dashboard'
+import Matches from './pages/Matches'
 import Auth from './pages/Auth'
 
 let lenis: Lenis | null = null
@@ -82,13 +83,13 @@ export default function App() {
             <Route path="/person/:id" element={<PersonPage />} />
             <Route path="/report" element={<Report />} />
             <Route path="/search" element={<Search />} />
+            <Route path="/matches" element={<Matches />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/login" element={<Auth />} />
             <Route path="/register" element={<Auth />} />
           </Routes>
         </motion.main>
       </AnimatePresence>
-      <SampleNote />
     </>
   )
 }

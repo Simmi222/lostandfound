@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
-import { submitReport, type CaseReport } from '../api'
+import { isLoggedIn, submitReport, type CaseReport } from '../api'
 import { PhotoDrop } from '../components/FaceScan'
 import { Icon, SplitTitle } from '../components/ui'
 
@@ -81,6 +81,22 @@ export default function Report() {
     } finally {
       setSubmitting(false)
     }
+  }
+
+  if (!isLoggedIn()) {
+    return (
+      <div className="page" style={{ maxWidth: 640, margin: '60px auto', textAlign: 'center' }}>
+        <p className="eyebrow mono" style={{ marginBottom: 14 }}>Sign in required</p>
+        <h1 className="h2" style={{ marginBottom: 20 }}>Please sign in to post a report</h1>
+        <p className="muted" style={{ marginBottom: 32, lineHeight: 1.6 }}>
+          To create and manage a missing-person report and receive updates on potential photo matches, an account is required.
+        </p>
+        <div style={{ display: 'flex', gap: 14, justifyContent: 'center' }}>
+          <Link to="/login" className="btn btn-light">Sign in</Link>
+          <Link to="/register" className="btn btn-ghost">Create account</Link>
+        </div>
+      </div>
+    )
   }
 
   if (caseId) return <Lit name={form.name} caseId={caseId} />

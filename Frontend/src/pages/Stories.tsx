@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import { listMissing } from '../api'
 import type { Person } from '../api'
@@ -16,7 +16,8 @@ const ageBands = [
 
 export default function Stories() {
   const [all, setAll] = useState<Person[]>([])
-  const [q, setQ] = useState('')
+  const [searchParams, setSearchParams] = useSearchParams()
+  const q = searchParams.get('q') || ''
   const [band, setBand] = useState('all')
 
   useEffect(() => {
@@ -38,7 +39,7 @@ export default function Stories() {
             <SplitTitle className="h2" text="Every one of them is someone’s everything." />
           </div>
         </div>
-        <div className="page-head" style={{ marginBottom: 36 }}>
+        <div className="page-head" style={{ marginBottom: 36, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
           <div className="filters" role="group" aria-label="Filter by age">
             {ageBands.map((b) => (
               <button key={b.key} className={`chip ${band === b.key ? 'on' : ''}`} onClick={() => setBand(b.key)}>
@@ -46,7 +47,24 @@ export default function Stories() {
               </button>
             ))}
           </div>
-          <input className="search-input" placeholder="Search a name or a city…" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search by name or city" />
+          {q && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span className="mono candle" style={{ fontSize: 13 }}>
+                Search: &ldquo;{q}&rdquo; ({shown.length} found)
+              </span>
+              <button
+                type="button"
+                className="chip"
+                onClick={() => {
+                  searchParams.delete('q')
+                  setSearchParams(searchParams)
+                }}
+                style={{ padding: '4px 10px', fontSize: 12 }}
+              >
+                Clear
+              </button>
+            </div>
+          )}
         </div>
 
         <motion.div className="grid" layout>

@@ -15,7 +15,7 @@ from django.db import connection, transaction
 
 logger = logging.getLogger(__name__)
 
-MATCH_TOLERANCE: float = getattr(settings, "FACE_MATCH_TOLERANCE", 0.48)
+MATCH_TOLERANCE: float = getattr(settings, "FACE_MATCH_TOLERANCE", 0.58)
 ALGORITHM_VERSION = "opencv_dct_v1" if face_recognition is None else "face_recognition_v1"
 
 _FRONTAL_CASCADE = None

@@ -6,13 +6,29 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   if (access) headers.set('Authorization', `Bearer ${access}`)
   if (!(options.body instanceof FormData)) headers.set('Content-Type', 'application/json')
 
-  const response = await fetch(`${API_BASE}${path}`, { ...options, headers })
-  const body = await response.json().catch(() => ({}))
-  if (!response.ok) {
-    const message = body.message || body.detail || body.error || 'Request failed.'
-    throw new Error(message)
+  try {
+    const response = await fetch(`${API_BASE}${path}`, { ...options, headers })
+    const body = await response.json().catch(() => ({}))
+    if (!response.ok) {
+      const message =
+        body.message ||
+        body.detail ||
+        body.error ||
+        (typeof body === 'object' && body !== null
+          ? Object.entries(body)
+              .map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(', ') : v}`)
+              .join(' | ')
+          : null) ||
+        'Request failed.'
+      throw new Error(message)
+    }
+    return body as T
+  } catch (err: unknown) {
+    if (err instanceof TypeError && err.message === 'Failed to fetch') {
+      throw new Error('Unable to connect to backend server. Please make sure the Django server is running on http://127.0.0.1:8000.')
+    }
+    throw err
   }
-  return body as T
 }
 
 export type ApiReport = {
@@ -91,7 +107,7 @@ export type SeenReport = {
 
 type Paginated<T> = { results: T[] }
 
-const absolutePhoto = (url: string | null | undefined) => {
+export const absolutePhoto = (url: string | null | undefined) => {
   if (!url) return ''
   return url.startsWith('http') ? url : `http://127.0.0.1:8000${url}`
 }
@@ -203,6 +219,64 @@ export async function searchByName(query: string): Promise<Person[]> {
 
 export async function getDashboard() {
   return request<{ reports: ApiReport[]; matches: unknown[]; unread_notifications: number }>('/matches/dashboard/')
+}
+
+export type SimilarMatchItem = {
+  id: number
+  report_low: number
+  report_high: number
+  report_summary: {
+    id: number
+    name: string
+    age: number | null
+    last_seen_place: string
+    description: string
+    photo_url: string | null
+  }
+  matched_report_summary: {
+    id: number
+    name: string
+    age: number | null
+    last_seen_place: string
+    description: string
+    photo_url: string | null
+  }
+  face_distance: number
+  review_status: string
+  created_at: string
+}
+
+export type DirectMatchItem = {
+  id: number
+  missing_report: number
+  found_report: number
+  missing_report_summary: {
+    id: number
+    name: string
+    age: number | null
+    last_seen_place: string
+    description: string
+  } | null
+  found_report_summary: {
+    id: number
+    name: string
+    age: number | null
+    last_seen_place: string
+    description: string
+  } | null
+  face_distance: number
+  review_status: string
+  created_at: string
+}
+
+export async function fetchAllMatches() {
+  const [similar, mine] = await Promise.all([
+    request<SimilarMatchItem[] | Paginated<SimilarMatchItem>>('/matches/similar/').catch(() => []),
+    request<DirectMatchItem[] | Paginated<DirectMatchItem>>('/matches/mine/').catch(() => []),
+  ])
+  const similarList: SimilarMatchItem[] = Array.isArray(similar) ? similar : (similar as Paginated<SimilarMatchItem>).results || []
+  const mineList: DirectMatchItem[] = Array.isArray(mine) ? mine : (mine as Paginated<DirectMatchItem>).results || []
+  return { similar: similarList, direct: mineList }
 }
 
 export async function getSimilarMatches() {

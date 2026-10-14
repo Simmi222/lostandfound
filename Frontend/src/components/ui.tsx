@@ -166,6 +166,7 @@ export const Icon = {
   share: ico(<><circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4" /></>),
   upload: ico(<><path d="M12 16V4M6 10l6-6 6 6" /><path d="M4 16v3a1 1 0 001 1h14a1 1 0 001-1v-3" /></>),
   search: ico(<><circle cx="11" cy="11" r="7" /><path d="M20 20l-4-4" /></>),
+  camera: ico(<><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" /><circle cx="12" cy="13" r="4" /></>),
   pin: ico(<><path d="M12 22s7-6.2 7-12a7 7 0 10-14 0c0 5.8 7 12 7 12z" /><circle cx="12" cy="10" r="2.5" /></>),
   check: ico(<path d="M5 12l5 5 9-10" />),
   x: ico(<path d="M6 6l12 12M18 6L6 18" />),

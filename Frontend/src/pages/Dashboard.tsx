@@ -1,46 +1,127 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { getDashboard, getSimilarMatches, type ApiReport } from '../api'
+import { getDashboard, absolutePhoto, type ApiReport } from '../api'
+import { Photo } from '../components/ui'
+import { Footer } from '../components/Chrome'
 
 export default function Dashboard() {
   const [reports, setReports] = useState<ApiReport[]>([])
-  const [matches, setMatches] = useState<unknown[]>([])
+  const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
   const load = async () => {
+    setLoading(true)
     try {
-      const [data, similar] = await Promise.all([getDashboard(), getSimilarMatches()])
+      const data = await getDashboard()
       setReports(data.reports)
-      setMatches([...data.matches, ...similar])
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Please sign in first.')
+    } finally {
+      setLoading(false)
     }
   }
 
   useEffect(() => { void load() }, [])
 
   return (
-    <div className="page">
-      <p className="eyebrow mono">Shared dashboard</p>
-      <h1 className="h2">Everyone searching together.</h1>
-      {error && <div className="panel" style={{ marginTop: 24 }}>{error} <Link to="/login">Sign in</Link></div>}
-      <div className="grid-2" style={{ marginTop: 36, alignItems: 'start' }}>
-        <section className="panel">
-          <h2 className="h3">All active reports ({reports.length})</h2>
-          {reports.map((report) => (
-            <Link key={report.id} to={`/person/${report.id}`} className="card" style={{ display: 'block', marginTop: 14 }}>
-              <strong>{report.name || 'Unknown'}</strong>
-              <p className="muted">{report.kind} · {report.last_seen_place || 'Location not specified'}</p>
-              <p className="faint">{report.description}</p>
+    <>
+      <div className="page" style={{ maxWidth: 1080, margin: '0 auto' }}>
+        <p className="eyebrow mono">Shared dashboard</p>
+        <h1 className="h2">Everyone searching together.</h1>
+        {error && (
+          <div className="panel" style={{ marginTop: 24 }}>
+            {error} <Link to="/login" style={{ textDecoration: 'underline', color: 'var(--candle)' }}>Sign in</Link>
+          </div>
+        )}
+
+        <section className="panel" style={{ marginTop: 36, padding: '32px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
+            <h2 className="h3">All active reports ({reports.length})</h2>
+            <Link to="/report" className="btn btn-light btn-sm">
+              Post new report
             </Link>
-          ))}
-        </section>
-        <section className="panel">
-          <h2 className="h3">Potential matches ({matches.length})</h2>
-          {matches.length === 0 && <p className="muted" style={{ marginTop: 14 }}>No candidate matches yet.</p>}
-          <Link to="/search" className="btn btn-light btn-sm" style={{ marginTop: 20 }}>Search a photo</Link>
+          </div>
+
+          {loading && <p className="mono candle">Loading reports…</p>}
+
+          {!loading && reports.length === 0 && (
+            <p className="muted" style={{ padding: '24px 0' }}>No active reports found.</p>
+          )}
+
+          <div style={{ display: 'grid', gap: 16 }}>
+            {reports.map((report) => (
+              <Link
+                key={report.id}
+                to={`/person/${report.id}`}
+                className="card"
+                style={{
+                  display: 'flex',
+                  gap: 18,
+                  alignItems: 'center',
+                  padding: '14px 18px',
+                  borderRadius: 14,
+                  background: 'rgba(243, 231, 211, 0.03)',
+                  transition: 'background 0.2s, transform 0.2s',
+                }}
+              >
+                <div
+                  style={{
+                    width: 64,
+                    height: 76,
+                    borderRadius: 10,
+                    overflow: 'hidden',
+                    flexShrink: 0,
+                    background: '#231810',
+                  }}
+                >
+                  <Photo
+                    src={absolutePhoto(report.photos?.[0]?.photo)}
+                    alt={report.name || 'Person'}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                    <strong style={{ fontSize: 18, color: 'var(--ink)' }}>{report.name || 'Unknown'}</strong>
+                    <span
+                      className="mono"
+                      style={{
+                        fontSize: 11,
+                        padding: '2px 8px',
+                        borderRadius: 999,
+                        background: report.kind === 'MISSING' ? 'rgba(240, 169, 74, 0.15)' : 'rgba(159, 216, 181, 0.15)',
+                        color: report.kind === 'MISSING' ? 'var(--candle)' : 'var(--hope)',
+                      }}
+                    >
+                      {report.kind}
+                    </span>
+                    {report.age !== null && (
+                      <span className="mono faint" style={{ fontSize: 12 }}>{report.age} yrs</span>
+                    )}
+                  </div>
+                  <p className="muted" style={{ fontSize: 13, marginTop: 4 }}>
+                    Last seen · {report.last_seen_place || 'Location not specified'}
+                  </p>
+                  <p
+                    className="faint"
+                    style={{
+                      fontSize: 13,
+                      marginTop: 4,
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      maxWidth: '65ch',
+                    }}
+                  >
+                    {report.description}
+                  </p>
+                </div>
+              </Link>
+            ))}
+          </div>
         </section>
       </div>
-    </div>
+      <Footer />
+    </>
   )
 }

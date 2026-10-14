@@ -66,11 +66,11 @@ class MyMatchesView(generics.ListAPIView):
     """
     GET /api/matches/mine/
 
-    Returns potential matches involving the authenticated user's reports.
+    Returns potential matches involving missing/found reports.
     Ordered by face_distance (closest = most similar first).
     """
     serializer_class   = FaceMatchSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]
 
     def get_queryset(self):
         return (
@@ -86,7 +86,7 @@ class MyMatchesView(generics.ListAPIView):
 class MatchDetailView(generics.RetrieveAPIView):
     """GET /api/matches/{id}/"""
     serializer_class   = FaceMatchSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]
 
     def get_queryset(self):
         return FaceMatch.objects.all()
@@ -96,7 +96,7 @@ class SimilarMatchesView(generics.ListAPIView):
     """GET /api/matches/similar/ — stored missing-report photo matches."""
 
     serializer_class = SimilarReportMatchSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]
 
     def get_queryset(self):
         return (

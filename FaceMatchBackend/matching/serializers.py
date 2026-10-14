@@ -39,6 +39,11 @@ class FaceMatchSerializer(serializers.ModelSerializer):
         """Return safe, non-sensitive summary of a report."""
         if report is None:
             return None
+        first_photo = report.photos.first()
+        photo_url = None
+        if first_photo and first_photo.photo:
+            url = first_photo.photo.url
+            photo_url = f"http://127.0.0.1:8000{url}" if not url.startswith("http") else url
         return {
             "id":              report.pk,
             "kind":            report.kind,
@@ -48,6 +53,7 @@ class FaceMatchSerializer(serializers.ModelSerializer):
             "gender":          report.gender,
             "last_seen_place": report.last_seen_place,
             "description":     report.description[:200] if report.description else "",
+            "photo_url":        photo_url,
         }
 
     def get_missing_report_summary(self, obj):

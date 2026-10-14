@@ -138,13 +138,23 @@ class SimilarReportMatchSerializer(serializers.ModelSerializer):
 
     def _summary(self, report):
         first_photo = report.photos.first()
+        photo_url = None
+        if first_photo and first_photo.photo:
+            url = first_photo.photo.url
+            request = self.context.get("request")
+            if request:
+                photo_url = request.build_absolute_uri(url)
+            elif not url.startswith("http"):
+                photo_url = f"http://127.0.0.1:8000{url}"
+            else:
+                photo_url = url
         return {
             "id": report.pk,
             "name": report.name or "Unknown",
             "age": report.age,
             "last_seen_place": report.last_seen_place,
             "description": report.description[:200] if report.description else "",
-            "photo_url": first_photo.photo.url if first_photo else None,
+            "photo_url": photo_url,
         }
 
     def get_report_summary(self, obj):

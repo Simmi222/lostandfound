@@ -1,27 +1,50 @@
 import { useEffect, useState } from 'react'
-import { Link, NavLink, useLocation } from 'react-router-dom'
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Icon, Magnetic } from './ui'
-
-const links = [
-  { to: '/stories', label: 'Their stories' },
-  { to: '/search', label: 'I saw someone' },
-  { to: '/dashboard', label: 'Family dashboard' },
-]
 
 export function Nav() {
   const [scrolled, setScrolled] = useState(false)
   const [open, setOpen] = useState(false)
   const [loggedIn, setLoggedIn] = useState(() => Boolean(localStorage.getItem('access')))
   const loc = useLocation()
+  const navigate = useNavigate()
+
+  const [searchVal, setSearchVal] = useState(() => {
+    return new URLSearchParams(window.location.search).get('q') || ''
+  })
+
   useEffect(() => {
     const on = () => setScrolled(window.scrollY > 40)
     on()
     window.addEventListener('scroll', on, { passive: true })
     return () => window.removeEventListener('scroll', on)
   }, [])
+
   useEffect(() => setOpen(false), [loc.pathname])
-  if (loc.pathname.startsWith('/dashboard')) return null
+
+  useEffect(() => {
+    if (loc.pathname === '/stories') {
+      const q = new URLSearchParams(loc.search).get('q') || ''
+      setSearchVal(q)
+    }
+  }, [loc.pathname, loc.search])
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (searchVal.trim()) {
+      navigate(`/stories?q=${encodeURIComponent(searchVal.trim())}`)
+    } else {
+      navigate('/stories')
+    }
+  }
+
+  const handleSearchChange = (val: string) => {
+    setSearchVal(val)
+    if (loc.pathname === '/stories') {
+      navigate(val.trim() ? `/stories?q=${encodeURIComponent(val)}` : '/stories', { replace: true })
+    }
+  }
 
   return (
     <motion.header
@@ -35,16 +58,59 @@ export function Nav() {
         Still Searching
       </Link>
       <nav className={`nav-links ${open ? 'open' : ''}`}>
-        {links.map((l) => (
-          <NavLink key={l.to} to={l.to} className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-            {({ isActive }) => (
-              <>
-                {isActive && <motion.span layoutId="nav-pill" className="nav-pill" transition={{ type: 'spring', stiffness: 400, damping: 34 }} />}
-                {l.label}
-              </>
+        <NavLink to="/stories" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+          Their stories
+        </NavLink>
+
+        <NavLink to="/matches" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+          Matched
+        </NavLink>
+
+        <form className="nav-search-form" onSubmit={handleSearchSubmit}>
+          <div className="nav-search-pill">
+            <Icon.search size={14} />
+            <input
+              type="text"
+              className="nav-search-input"
+              placeholder="Search name, city or pic…"
+              value={searchVal}
+              onChange={(e) => handleSearchChange(e.target.value)}
+              aria-label="Search name, city or pic"
+            />
+            {searchVal && (
+              <button
+                type="button"
+                className="nav-search-clear"
+                onClick={() => {
+                  setSearchVal('')
+                  if (loc.pathname === '/stories') navigate('/stories')
+                }}
+                aria-label="Clear search"
+              >
+                <Icon.x size={13} />
+              </button>
             )}
-          </NavLink>
-        ))}
+            <label className="nav-search-camera-btn" title="Search by photo (face recognition)">
+              <Icon.camera size={15} />
+              <input
+                type="file"
+                accept="image/*"
+                hidden
+                onChange={(e) => {
+                  const file = e.target.files?.[0]
+                  if (file) {
+                    navigate('/search', { state: { photoFile: file } })
+                  }
+                }}
+              />
+            </label>
+          </div>
+        </form>
+
+        <NavLink to="/dashboard" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+          Family dashboard
+        </NavLink>
+
         <Magnetic>
           <Link to="/report" className="btn btn-light btn-sm" style={{ marginLeft: 8 }}>
             Report someone missing
@@ -111,5 +177,5 @@ export function Footer() {
 }
 
 export function SampleNote() {
-  return <div className="sample-note mono">Sample stories · design preview</div>
+  return null
 }
