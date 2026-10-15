@@ -26,7 +26,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     return body as T
   } catch (err: unknown) {
     if (err instanceof TypeError && err.message === 'Failed to fetch') {
-      throw new Error('Unable to connect to backend server. Please make sure the Django server is running on http://127.0.0.1:8000.')
+      throw new Error('Unable to reach the server. Please check your connection or try again later.')
     }
     throw err
   }
@@ -173,8 +173,8 @@ export async function getPerson(id: string): Promise<Person | undefined> {
 export async function submitReport(report: CaseReport, onProgress?: (pct: number) => void) {
   const form = new FormData()
   form.append('name', report.name)
-  form.append('age', report.age)
-  form.append('height', report.height)
+  if (report.age) form.append('age', report.age)
+  if (report.height) form.append('height', report.height)
   const place = [report.city, report.lastSeenPlace].filter(Boolean).join(', ')
   form.append('last_seen_place', place || 'Unknown')
   form.append('colour', report.wearing)
@@ -290,12 +290,15 @@ export async function getSimilarMatches() {
 export async function reportSeenPerson(report: SeenReport, photo: File | null) {
   const form = new FormData()
   form.append('name', report.personName || 'Unknown')
-  form.append('gender', report.gender)
-  form.append('age', report.ageRange.replace(/\D/g, '').split('-')[0] || '')
-  form.append('last_seen_place', `${report.city}, ${report.place}`)
-  form.append('lost_or_found_date', report.seenAt.slice(0, 10))
-  form.append('colour', report.complexion)
-  form.append('description', `${report.notes}\n${report.clothesColour}\n${report.marks}`)
+  if (report.gender) form.append('gender', report.gender)
+  const ageVal = report.ageRange.replace(/\D/g, '').split('-')[0]
+  if (ageVal) form.append('age', ageVal)
+  const seenPlace = [report.city, report.place].filter(Boolean).join(', ')
+  form.append('last_seen_place', seenPlace || 'Unknown')
+  if (report.seenAt) form.append('lost_or_found_date', report.seenAt.slice(0, 10))
+  if (report.complexion) form.append('colour', report.complexion)
+  const desc = [report.notes, report.clothesColour, report.marks].filter(Boolean).join('\n')
+  form.append('description', desc)
   form.append('contact_name', report.reporterName)
   form.append('contact_phone', report.reporterPhone)
   if (photo) form.append('images', photo)
