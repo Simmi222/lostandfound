@@ -76,8 +76,13 @@ export default function Report() {
     try {
       const res = await submitReport(form, setProgress)
       setCaseId(res.caseId)
-    } catch {
-      setError('We couldn’t send your report. Nothing you entered is lost — please try again.')
+    } catch (err: unknown) {
+      const detail = err instanceof Error ? err.message : ''
+      setError(
+        detail
+          ? `We couldn’t send your report: ${detail}`
+          : 'We couldn’t send your report. Nothing you entered is lost — please try again.',
+      )
     } finally {
       setSubmitting(false)
     }

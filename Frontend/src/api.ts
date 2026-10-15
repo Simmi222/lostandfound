@@ -21,7 +21,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
               .join(' | ')
           : null) ||
         'Request failed.'
-      throw new Error(message)
+      throw new Error(`${response.status}: ${message}`)
     }
     return body as T
   } catch (err: unknown) {

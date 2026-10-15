@@ -50,6 +50,8 @@ class PersonReportSerializer(serializers.ModelSerializer):
             "description",
             "address",
             "circumstances",
+            "contact_name",
+            "contact_phone",
             "photos",
             "images",
             "created_by",
