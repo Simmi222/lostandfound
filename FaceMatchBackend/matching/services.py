@@ -62,7 +62,7 @@ def get_face_encoding_from_upload(uploaded_file) -> Optional[list]:
     return response.json().get("encoding")
 
 
-MATCH_TOLERANCE: float = getattr(settings, "FACE_MATCH_TOLERANCE", 0.58)
+MATCH_TOLERANCE: float = getattr(settings, "FACE_MATCH_TOLERANCE", 0.68)
 ALGORITHM_VERSION = "face_recognition_v1"
 
 _FRONTAL_CASCADE = None
@@ -187,10 +187,11 @@ def _notify_for_match(match) -> None:
         )
 
 
-def _search_candidates(new_encoding: list, opposite_kind: Optional[str] = None) -> list[tuple]:
+def _search_candidates(new_encoding: list, opposite_kind: Optional[str] = None, tolerance: Optional[float] = None) -> list[tuple]:
     """
     Compare new_encoding against active photos.
     If opposite_kind is provided, restricts to that kind. Otherwise searches all reports.
+    tolerance can override MATCH_TOLERANCE for broader search matches.
     Returns a list of (distance, ReportPhoto) tuples under the tolerance,
     sorted ascending by distance (best match first).
     """
@@ -226,6 +227,7 @@ def _search_candidates(new_encoding: list, opposite_kind: Optional[str] = None) 
             logger.warning("Could not auto-heal photo #%d: %s", p.pk, heal_err)
 
     photos = qs.filter(face_encoding__isnull=False)
+    eff_tolerance = tolerance if tolerance is not None else MATCH_TOLERANCE
 
     if _vector_storage_available():
         from pgvector.django import L2Distance
@@ -233,7 +235,7 @@ def _search_candidates(new_encoding: list, opposite_kind: Optional[str] = None) 
         photos = (
             photos
             .annotate(distance=L2Distance("face_encoding", new_encoding))
-            .filter(distance__lte=MATCH_TOLERANCE)
+            .filter(distance__lte=eff_tolerance)
             .order_by("distance")
         )
         return [(float(photo.distance), photo) for photo in photos]
@@ -245,7 +247,7 @@ def _search_candidates(new_encoding: list, opposite_kind: Optional[str] = None) 
         except (TypeError, ValueError):
             logger.warning("Skipping invalid face encoding for photo #%d", photo.pk)
             continue
-        if distance <= MATCH_TOLERANCE:
+        if distance <= eff_tolerance:
             candidates.append((distance, photo))
 
     candidates.sort(key=lambda item: item[0])

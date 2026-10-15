@@ -218,7 +218,7 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # ─── Face matching ────────────────────────────────────────────────────────────
 # Configurable tolerance; evaluate false-positive / false-negative rates
 # before adjusting in production.
-FACE_MATCH_TOLERANCE = float(os.environ.get("FACE_MATCH_TOLERANCE", "0.58"))
+FACE_MATCH_TOLERANCE = float(os.environ.get("FACE_MATCH_TOLERANCE", "0.68"))
 
 # ─── Email ────────────────────────────────────────────────────────────────────
 EMAIL_BACKEND = os.environ.get(

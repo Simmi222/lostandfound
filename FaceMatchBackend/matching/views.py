@@ -143,7 +143,8 @@ class SearchPhotoView(APIView):
                     "message": "No face detected in the uploaded photo.",
                 })
 
-            candidates = _search_candidates(encoding)[:20]
+            # Tolerance 0.74 allows matching even across different angles, lighting, and expressions
+            candidates = _search_candidates(encoding, tolerance=0.74)[:20]
 
             matches = []
             for distance, photo in candidates:
