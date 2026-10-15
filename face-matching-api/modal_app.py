@@ -165,4 +165,4 @@ def web_app():
                 detail="Could not process image",
             )
 
-        return api
+    return api
