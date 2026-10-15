@@ -40,6 +40,8 @@ INSTALLED_APPS = [
     "rest_framework_simplejwt",
     "rest_framework_simplejwt.token_blacklist",
     "corsheaders",
+    "cloudinary",
+    "cloudinary_storage",
 
     # Project apps
     "Accounts",
@@ -183,12 +185,11 @@ MEDIA_URL  = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
 if _CLOUDINARY_CONFIGURED:
-    if os.environ.get("CLOUDINARY_CLOUD_NAME"):
-        CLOUDINARY_STORAGE = {
-            "CLOUD_NAME": os.environ["CLOUDINARY_CLOUD_NAME"],
-            "API_KEY": os.environ["CLOUDINARY_API_KEY"],
-            "API_SECRET": os.environ["CLOUDINARY_API_SECRET"],
-        }
+    CLOUDINARY_STORAGE = {
+        "CLOUD_NAME": os.environ.get("CLOUDINARY_CLOUD_NAME", ""),
+        "API_KEY":    os.environ.get("CLOUDINARY_API_KEY", ""),
+        "API_SECRET": os.environ.get("CLOUDINARY_API_SECRET", ""),
+    }
     STORAGES = {
         "default": {
             "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
