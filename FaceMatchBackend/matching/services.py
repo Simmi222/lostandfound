@@ -311,7 +311,7 @@ def save_photo_and_match(report, uploaded_file):
     )
 
     try:
-        encoding = get_face_encoding(photo.photo.url)
+        encoding = get_face_encoding_from_upload(uploaded_file)
     except Exception as exc:
         photo.processing_status = ReportPhoto.ProcessingStatus.ERROR
         photo.save(update_fields=["processing_status"])
