@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { AnimatePresence, motion, useScroll, useTransform } from 'framer-motion'
-import { getPerson } from '../api'
+import { getPerson, getCurrentUser, deleteReport } from '../api'
 import type { Person } from '../api'
 import { Icon, Magnetic, Photo, Reveal, SplitTitle, TimeApart } from '../components/ui'
 import { Footer } from '../components/Chrome'
@@ -11,12 +11,37 @@ const daysSince = (date: string) => Math.max(0, Math.floor((Date.now() - new Dat
 
 export default function PersonPage() {
   const { id = '' } = useParams()
+  const navigate = useNavigate()
   const [person, setPerson] = useState<Person | null | undefined>(undefined)
   const [seen, setSeen] = useState(false)
   const [poster, setPoster] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const currentUser = getCurrentUser()
   const { scrollY } = useScroll()
   const photoScale = useTransform(scrollY, [0, 800], [1, 1.12])
+
+  const canDelete = Boolean(
+    currentUser &&
+      person &&
+      (currentUser.role === 'ADMIN' ||
+        currentUser.username === person.from ||
+        (person.created_by && currentUser.id === person.created_by))
+  )
+
+  const handleDelete = async () => {
+    if (!person) return
+    const ok = window.confirm(`Are you sure you want to delete the report for ${person.name}?`)
+    if (!ok) return
+    setDeleting(true)
+    try {
+      await deleteReport(Number(id), (person.kind as 'MISSING' | 'FOUND') || 'MISSING')
+      navigate('/dashboard')
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to delete report.')
+      setDeleting(false)
+    }
+  }
 
   useEffect(() => {
     getPerson(id).then((p) => setPerson(p ?? null))
@@ -93,6 +118,20 @@ export default function PersonPage() {
                 <button className="btn btn-ghost" onClick={() => setPoster(true)}>
                   <Icon.poster /> Poster
                 </button>
+                {canDelete && (
+                  <button
+                    className="btn btn-ghost"
+                    onClick={handleDelete}
+                    disabled={deleting}
+                    style={{
+                      color: '#ff6b6b',
+                      borderColor: 'rgba(255, 107, 107, 0.4)',
+                      background: 'rgba(255, 107, 107, 0.08)',
+                    }}
+                  >
+                    {deleting ? 'Deleting…' : 'Delete report'}
+                  </button>
+                )}
               </div>
             </div>
 

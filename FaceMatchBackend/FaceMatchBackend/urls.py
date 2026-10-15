@@ -27,6 +27,10 @@ urlpatterns = [
     path("api/notifications/", include("notifications.urls")),
 ]
 
-# Serve uploaded media files in development
-if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+from django.views.static import serve
+from django.urls import re_path
+
+# Serve uploaded media files (works both in development and production fallback)
+urlpatterns += [
+    re_path(r"^media/(?P<path>.*)$", serve, {"document_root": settings.MEDIA_ROOT}),
+]

@@ -54,13 +54,20 @@ class MissingReportListCreateView(generics.ListCreateAPIView):
         serializer.save(kind="MISSING")
 
 
-class MissingReportDetailView(generics.RetrieveAPIView):
-    """GET /api/reports/missing/{id}/"""
+class MissingReportDetailView(generics.RetrieveDestroyAPIView):
+    """
+    GET    /api/reports/missing/{id}/  — get missing report details (public)
+    DELETE /api/reports/missing/{id}/  — delete report (owner or admin only)
+    """
     serializer_class = PersonReportSerializer
-    permission_classes = [permissions.AllowAny]
+
+    def get_permissions(self):
+        if self.request.method == "DELETE":
+            return [permissions.IsAuthenticated(), IsReportOwner()]
+        return [permissions.AllowAny()]
 
     def get_queryset(self):
-        return PersonReport.objects.filter(kind="MISSING", is_active=True)
+        return PersonReport.objects.filter(kind="MISSING")
 
 
 class MissingReportUpdateView(generics.UpdateAPIView):
@@ -114,13 +121,20 @@ class FoundReportListCreateView(generics.ListCreateAPIView):
         serializer.save(kind="FOUND")
 
 
-class FoundReportDetailView(generics.RetrieveAPIView):
-    """GET /api/reports/found/{id}/"""
-    serializer_class   = PersonReportSerializer
-    permission_classes = [permissions.AllowAny]
+class FoundReportDetailView(generics.RetrieveDestroyAPIView):
+    """
+    GET    /api/reports/found/{id}/   — get found report details (public)
+    DELETE /api/reports/found/{id}/   — delete report (owner or admin only)
+    """
+    serializer_class = PersonReportSerializer
+
+    def get_permissions(self):
+        if self.request.method == "DELETE":
+            return [permissions.IsAuthenticated(), IsReportOwner()]
+        return [permissions.AllowAny()]
 
     def get_queryset(self):
-        return PersonReport.objects.filter(kind="FOUND", is_active=True)
+        return PersonReport.objects.filter(kind="FOUND")
 
 
 class FoundReportUpdateView(generics.UpdateAPIView):

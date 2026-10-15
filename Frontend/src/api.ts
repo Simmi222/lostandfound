@@ -45,6 +45,7 @@ export type ApiReport = {
   lost_or_found_date: string | null
   description: string
   circumstances: string
+  created_by?: number
   created_by_username: string
   created_at: string
   photos: { id: number; photo: string; processing_status: string }[]
@@ -155,6 +156,20 @@ export function logout() {
 }
 
 export const isLoggedIn = () => Boolean(localStorage.getItem('access'))
+
+export function getCurrentUser(): { id?: number; username?: string; role?: string } | null {
+  try {
+    const raw = localStorage.getItem('user')
+    return raw ? JSON.parse(raw) : null
+  } catch {
+    return null
+  }
+}
+
+export async function deleteReport(id: number, kind: 'MISSING' | 'FOUND' = 'MISSING'): Promise<void> {
+  const endpoint = kind === 'FOUND' ? `/reports/found/${id}/` : `/reports/missing/${id}/`
+  await request<unknown>(endpoint, { method: 'DELETE' })
+}
 
 export async function listMissing(): Promise<Person[]> {
   const data = await request<ApiReport[] | Paginated<ApiReport>>('/reports/missing/')

@@ -304,11 +304,23 @@ def save_photo_and_match(report, uploaded_file):
     """
     from reports.models import ReportPhoto, PersonReport
 
-    photo = ReportPhoto.objects.create(
-        report=report,
-        photo=uploaded_file,
-        processing_status=ReportPhoto.ProcessingStatus.PENDING,
-    )
+    try:
+        photo = ReportPhoto.objects.create(
+            report=report,
+            photo=uploaded_file,
+            processing_status=ReportPhoto.ProcessingStatus.PENDING,
+        )
+    except Exception as storage_exc:
+        logger.exception("Storage backend failed, saving to local filesystem fallback: %s", storage_exc)
+        from django.core.files.storage import FileSystemStorage
+        fs = FileSystemStorage()
+        uploaded_file.seek(0)
+        saved_name = fs.save(f"report_photos/{getattr(uploaded_file, 'name', 'photo.jpg')}", uploaded_file)
+        photo = ReportPhoto.objects.create(
+            report=report,
+            photo=saved_name,
+            processing_status=ReportPhoto.ProcessingStatus.PENDING,
+        )
 
     try:
         encoding = get_face_encoding_from_upload(uploaded_file)

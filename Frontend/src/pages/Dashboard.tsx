@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { getDashboard, absolutePhoto, type ApiReport } from '../api'
+import { getDashboard, absolutePhoto, getCurrentUser, deleteReport, type ApiReport } from '../api'
 import { Photo } from '../components/ui'
 import { Footer } from '../components/Chrome'
 
@@ -8,6 +8,8 @@ export default function Dashboard() {
   const [reports, setReports] = useState<ApiReport[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [deletingId, setDeletingId] = useState<number | null>(null)
+  const currentUser = getCurrentUser()
 
   const load = async () => {
     setLoading(true)
@@ -20,6 +22,29 @@ export default function Dashboard() {
       setLoading(false)
     }
   }
+
+  const handleDelete = async (report: ApiReport) => {
+    const ok = window.confirm(`Are you sure you want to delete the report for "${report.name || 'this person'}"?`)
+    if (!ok) return
+
+    setDeletingId(report.id)
+    try {
+      await deleteReport(report.id, report.kind)
+      setReports((prev) => prev.filter((r) => r.id !== report.id))
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to delete report.')
+    } finally {
+      setDeletingId(null)
+    }
+  }
+
+  const canDelete = (r: ApiReport) =>
+    Boolean(
+      currentUser &&
+        (currentUser.role === 'ADMIN' ||
+          currentUser.username === r.created_by_username ||
+          (r.created_by && currentUser.id === r.created_by))
+    )
 
   useEffect(() => { void load() }, [])
 
@@ -116,6 +141,30 @@ export default function Dashboard() {
                     {report.description}
                   </p>
                 </div>
+                {canDelete(report) && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      void handleDelete(report)
+                    }}
+                    disabled={deletingId === report.id}
+                    className="btn btn-ghost btn-sm"
+                    style={{
+                      color: '#ff6b6b',
+                      borderColor: 'rgba(255, 107, 107, 0.4)',
+                      background: 'rgba(255, 107, 107, 0.08)',
+                      fontSize: 12,
+                      padding: '6px 12px',
+                      marginLeft: 12,
+                      flexShrink: 0,
+                    }}
+                    title="Delete this report"
+                  >
+                    {deletingId === report.id ? 'Deleting…' : 'Delete'}
+                  </button>
+                )}
               </Link>
             ))}
           </div>
