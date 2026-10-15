@@ -4,6 +4,13 @@ from rest_framework import serializers
 from .models import PersonReport, ReportPhoto, SimilarReportMatch
 
 
+class OptionalDateField(serializers.DateField):
+    def to_internal_value(self, value):
+        if value == "":
+            return None
+        return super().to_internal_value(value)
+
+
 class ReportPhotoSerializer(serializers.ModelSerializer):
     class Meta:
         model  = ReportPhoto
@@ -20,6 +27,7 @@ class PersonReportSerializer(serializers.ModelSerializer):
     """
 
     photos  = ReportPhotoSerializer(many=True, read_only=True)
+    lost_or_found_date = OptionalDateField(required=False, allow_null=True)
 
     # Write-only: multipart image uploads
     images = serializers.ListField(
@@ -64,6 +72,9 @@ class PersonReportSerializer(serializers.ModelSerializer):
         extra_kwargs = {
             "kind": {"required": False},
         }
+
+    def validate_lost_or_found_date(self, value):
+        return value or None
 
     def create(self, validated_data):
         # Lazy import to avoid circular dependency with matching.services
