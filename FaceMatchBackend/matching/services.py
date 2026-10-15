@@ -1,15 +1,8 @@
 from __future__ import annotations
 
+import logging
 import os
 import requests
-import logging
-
-try:
-    # pyrefly: ignore [missing-import]
-    import face_recognition
-except ImportError:
-    face_recognition = None
-
 import cv2
 import numpy as np
 
@@ -41,8 +34,31 @@ def get_face_encoding(image_url: str) -> Optional[list]:
     return result["encoding"]
 
 
+def get_face_encoding_from_upload(uploaded_file) -> Optional[list]:
+    """Send an uploaded image to the Modal face-encoding service."""
+
+    api_url = os.environ["FACE_MATCH_API_URL"].rstrip("/")
+    upload_api_url = api_url.removesuffix("/encode") + "/encode-upload"
+    api_key = os.environ["FACE_MATCH_API_KEY"]
+
+    uploaded_file.seek(0)
+    response = requests.post(
+        upload_api_url,
+        headers={"Authorization": f"Bearer {api_key}"},
+        files={
+            "file": (
+                getattr(uploaded_file, "name", "upload.jpg"),
+                uploaded_file,
+                getattr(uploaded_file, "content_type", "application/octet-stream"),
+            )
+        },
+        timeout=90,
+    )
+    response.raise_for_status()
+    return response.json()["encoding"]
+
+
 MATCH_TOLERANCE: float = getattr(settings, "FACE_MATCH_TOLERANCE", 0.58)
-# ALGORITHM_VERSION = "opencv_dct_v1" if face_recognition is None else "face_recognition_v1"
 ALGORITHM_VERSION = "face_recognition_v1"
 
 _FRONTAL_CASCADE = None
@@ -84,15 +100,6 @@ def extract_face_encoding(image_path: str) -> Optional[list]:
     Load an image from disk and return its 128-d face encoding as a plain list,
     or None if no usable face is detected.
     """
-    if face_recognition is not None:
-        try:
-            image = face_recognition.load_image_file(image_path)
-            encodings = face_recognition.face_encodings(image)
-            if encodings:
-                return encodings[0].tolist()
-        except Exception as exc:
-            logger.warning("dlib face_recognition error: %s, falling back to cv2", exc)
-
     try:
         frontal, profile = _get_cascades()
         img = cv2.imread(image_path)
@@ -289,7 +296,7 @@ def _create_or_skip_match(
 def save_photo_and_match(report, uploaded_file):
     """
     1. Save the uploaded file as a ReportPhoto.
-    2. Generate a face encoding if face_recognition is available.
+    2. Generate a face encoding through the Modal face-recognition service.
     3. Search for candidates in the opposite kind.
     4. Persist match records and trigger notifications.
 

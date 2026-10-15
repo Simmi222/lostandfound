@@ -21,6 +21,7 @@ image = (
     .pip_install(
         "fastapi",
         "pydantic",
+        "python-multipart",
         "requests",
         "Pillow",
         "numpy",
@@ -39,13 +40,51 @@ class EncodeRequest(BaseModel):
 )
 @modal.asgi_app()
 def web_app():
-    from fastapi import FastAPI, Header, HTTPException
+    from fastapi import FastAPI, File, Header, HTTPException, UploadFile
     from pydantic import BaseModel, HttpUrl
     import face_recognition
     import requests
     import numpy as np
     from PIL import Image, UnidentifiedImageError
     api = FastAPI(title="Lost and Found Face API")
+
+    def authorize(authorization: str | None) -> None:
+        expected_key = os.environ.get("FACE_API_KEY", "")
+        supplied_key = (
+            authorization.removeprefix("Bearer ").strip()
+            if authorization
+            else ""
+        )
+        if not expected_key or not hmac.compare_digest(
+            supplied_key, expected_key
+        ):
+            raise HTTPException(status_code=401, detail="Unauthorized")
+
+    def encode_image(data: bytes):
+        if len(data) > 10 * 1024 * 1024:
+            raise HTTPException(status_code=413, detail="Image exceeds 10 MB")
+
+        try:
+            with Image.open(BytesIO(data)) as img:
+                img = img.convert("RGB")
+                img.thumbnail((1600, 1600))
+                encodings = face_recognition.face_encodings(np.array(img))
+        except (UnidentifiedImageError, OSError, ValueError):
+            raise HTTPException(
+                status_code=400,
+                detail="Could not process image",
+            )
+
+        if len(encodings) == 0:
+            raise HTTPException(status_code=422, detail="No face detected")
+        if len(encodings) > 1:
+            raise HTTPException(status_code=422, detail="Multiple faces detected")
+
+        return {
+            "encoding": encodings[0].tolist(),
+            "algorithm_version": "face_recognition_v1",
+            "faces_detected": 1,
+        }
 
     @api.get("/")
     def health():
@@ -59,20 +98,7 @@ def web_app():
         body: EncodeRequest,
         authorization: str | None = Header(default=None),
     ):
-        expected_key = os.environ.get("FACE_API_KEY", "")
-        supplied_key = (
-            authorization.removeprefix("Bearer ").strip()
-            if authorization
-            else ""
-        )
-
-        if not expected_key or not hmac.compare_digest(
-            supplied_key, expected_key
-        ):
-            raise HTTPException(
-                status_code=401,
-                detail="Unauthorized",
-            )
+        authorize(authorization)
 
         url = str(body.image_url)
         parsed = urlparse(url)
@@ -90,8 +116,6 @@ def web_app():
             )
 
         try:
-            data = bytearray()
-
             with requests.get(
                 url,
                 stream=True,
@@ -110,43 +134,8 @@ def web_app():
                         detail="URL did not return an image",
                     )
 
-                for chunk in response.iter_content(65536):
-                    if not chunk:
-                        continue
-
-                    if len(data) + len(chunk) > 10 * 1024 * 1024:
-                        raise HTTPException(
-                            status_code=413,
-                            detail="Image exceeds 10 MB",
-                        )
-
-                    data.extend(chunk)
-
-                    # Process the complete downloaded image.
-                    with Image.open(BytesIO(data)) as img:
-                        img = img.convert("RGB")
-                        img.thumbnail((1600, 1600))
-                        pixels = np.array(img)
-
-                        encodings = face_recognition.face_encodings(pixels)
-
-                        if len(encodings) == 0:
-                            raise HTTPException(
-                                status_code=422,
-                                detail="No face detected",
-                            )
-
-                        if len(encodings) > 1:
-                            raise HTTPException(
-                                status_code=422,
-                                detail="Multiple faces detected",
-                            )
-
-                        return {
-                            "encoding": encodings[0].tolist(),
-                            "algorithm_version": "face_recognition_v1",
-                            "faces_detected": 1,
-                        }
+                data = response.content
+            return encode_image(data)
 
         except HTTPException:
             raise
@@ -164,5 +153,14 @@ def web_app():
                 status_code=400,
                 detail="Could not process image",
             )
+
+    @api.post("/encode-upload")
+    async def encode_uploaded_face(
+        file: UploadFile = File(...),
+        authorization: str | None = Header(default=None),
+    ):
+        authorize(authorization)
+        data = await file.read()
+        return encode_image(data)
 
     return api

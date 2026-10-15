@@ -9,7 +9,8 @@
 ### Prerequisites
 - Python 3.10+ 
 - Git
-- (Optional) CMake + C++ build tools for `dlib` / `face_recognition` on Windows
+- Face encoding runs in Modal; the Django/Render service does not install `dlib`
+  or `face_recognition`.
 
 ### 1. Clone and enter the project
 
@@ -39,7 +40,8 @@ python -m pip install -r requirements.txt
 
 > **Windows note**: Always run pip through the active environment (`python -m pip`), otherwise
 > Windows may use a different global Python installation. `dlib` (required by
-> `face_recognition`) also needs CMake and the **Desktop development with C++** workload
+> Local face encoding is handled by the Modal service, so Render does not need
+> CMake or the **Desktop development with C++** workload.
 > from [Build Tools for Visual Studio](https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2022).
 > Include the MSVC compiler, Windows SDK, and CMake tools during installation. After installing
 > the workload, open a new PowerShell window, activate the environment again, and run:
@@ -200,7 +202,7 @@ images: <file1.jpg> <file2.jpg>   ← multiple files
 
 ## Face Recognition
 
-- Uses `face_recognition` library (dlib pretrained model)
+- Uses the Modal `face_recognition` service (dlib pretrained model)
 - Generates 128-dimensional face embeddings per photo
 - Stores embeddings as JSON in `ReportPhoto.face_encoding`
 - Bidirectional matching: MISSING ↔ FOUND

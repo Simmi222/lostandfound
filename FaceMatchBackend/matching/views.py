@@ -6,7 +6,7 @@ from .models import FaceMatch
 from .serializers import FaceMatchSerializer
 from .services import (
     _search_candidates,
-    extract_face_encoding,
+    get_face_encoding_from_upload,
 )
 
 from reports.models import PersonReport
@@ -124,9 +124,6 @@ class SearchPhotoView(APIView):
     parser_classes     = [MultiPartParser, FormParser]
 
     def post(self, request):
-        import os
-        import tempfile
-
         uploaded_photo = request.FILES.get("photo")
         if not uploaded_photo:
             return Response(
@@ -134,17 +131,8 @@ class SearchPhotoView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        temp_file = tempfile.NamedTemporaryFile(
-            suffix=os.path.splitext(uploaded_photo.name)[1] or ".jpg",
-            delete=False,
-        )
-        temp_path = temp_file.name
         try:
-            for chunk in uploaded_photo.chunks():
-                temp_file.write(chunk)
-            temp_file.close()
-
-            encoding  = extract_face_encoding(temp_path)
+            encoding = get_face_encoding_from_upload(uploaded_photo)
 
             if encoding is None:
                 return Response({
@@ -171,8 +159,7 @@ class SearchPhotoView(APIView):
             return Response({"matches": matches})
 
         finally:
-            if os.path.exists(temp_path):
-                os.unlink(temp_path)
+            uploaded_photo.close()
 
 
 class SearchNameView(APIView):
