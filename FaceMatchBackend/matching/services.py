@@ -1,16 +1,19 @@
+from __future__ import annotations
+
 import os
 import requests
-from __future__ import annotations
+import logging
+
 try:
     # pyrefly: ignore [missing-import]
     import face_recognition
 except ImportError:
     face_recognition = None
-import logging
-# pyrefly: ignore [missing-import]
+
 import cv2
-from typing import Optional
 import numpy as np
+
+from typing import Optional
 from django.conf import settings
 from django.db import connection, transaction
 
