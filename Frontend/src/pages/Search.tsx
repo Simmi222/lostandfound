@@ -248,7 +248,11 @@ export default function Search() {
                     fontWeight: 600,
                   }}
                 >
-                  {((1 - Math.min(match.face_distance, 1)) * 100).toFixed(0)}% MATCH CONFIDENCE
+                  {Math.round(
+                    match.face_distance <= 0.6
+                      ? 100 - (match.face_distance / 0.6) * 25
+                      : Math.max(10, 75 - ((match.face_distance - 0.6) / 0.4) * 65)
+                  )}% MATCH CONFIDENCE
                 </span>
                 {match.age !== null && (
                   <span className="mono faint" style={{ fontSize: 12 }}>{match.age} yrs</span>
