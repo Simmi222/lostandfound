@@ -7,6 +7,7 @@ from pathlib import Path
 from datetime import timedelta
 import os
 from dotenv import load_dotenv
+import dj_database_url
 
 # ─── Base ────────────────────────────────────────────────────────────────────
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -101,14 +102,10 @@ WSGI_APPLICATION = "FaceMatchBackend.wsgi.application"
 # Default: SQLite for local dev.
 # Set DATABASE_URL in production for PostgreSQL.
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": "facematch_db",
-        "USER": "postgres",
-        "PASSWORD": "simmi",
-        "HOST": "localhost",
-        "PORT": "5432",
-    }
+    "default": dj_database_url.config(
+        default=os.getenv("DATABASE_URL"),
+        conn_max_age=600,
+    )
 }
 
 # PostgreSQL override via env
