@@ -294,7 +294,7 @@ export default function Report() {
               </button>
             ) : (
               <button className="btn btn-light" disabled={!canNext || submitting} onClick={submit}>
-                {submitting ? 'Lighting the way…' : 'Start the search'}
+                {submitting ? 'Posting report…' : 'Post report'}
               </button>
             )}
           </div>
