@@ -1,4 +1,5 @@
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://127.0.0.1:8000/api'
+const API_ORIGIN = API_BASE.replace(/\/api\/?$/, '')
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const headers = new Headers(options.headers)
@@ -109,7 +110,7 @@ type Paginated<T> = { results: T[] }
 
 export const absolutePhoto = (url: string | null | undefined) => {
   if (!url) return ''
-  return url.startsWith('http') ? url : `http://127.0.0.1:8000${url}`
+  return url.startsWith('http') ? url : `${API_ORIGIN}${url}`
 }
 
 export const toPerson = (report: ApiReport): Person => ({
