@@ -143,7 +143,7 @@ class SearchPhotoView(APIView):
                     "message": "No face detected in the uploaded photo.",
                 })
 
-            candidates = _search_candidates(encoding, "MISSING")[:20]
+            candidates = _search_candidates(encoding)[:20]
 
             matches = []
             for distance, photo in candidates:

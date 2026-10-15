@@ -187,19 +187,45 @@ def _notify_for_match(match) -> None:
         )
 
 
-def _search_candidates(new_encoding: list, opposite_kind: str) -> list[tuple]:
+def _search_candidates(new_encoding: list, opposite_kind: Optional[str] = None) -> list[tuple]:
     """
-    Compare new_encoding against all active photos of opposite_kind.
+    Compare new_encoding against active photos.
+    If opposite_kind is provided, restricts to that kind. Otherwise searches all reports.
     Returns a list of (distance, ReportPhoto) tuples under the tolerance,
     sorted ascending by distance (best match first).
     """
     from reports.models import ReportPhoto
 
-    photos = ReportPhoto.objects.filter(
-        report__kind=opposite_kind,
+    qs = ReportPhoto.objects.filter(
         report__is_active=True,
-        face_encoding__isnull=False,
     ).select_related("report", "report__created_by")
+
+    if opposite_kind:
+        qs = qs.filter(report__kind=opposite_kind)
+
+    # Auto-heal any photo that missed face encoding (e.g. during temporary service downtime)
+    unencoded = qs.filter(face_encoding__isnull=True)[:5]
+    for p in unencoded:
+        try:
+            if p.photo:
+                from io import BytesIO
+                try:
+                    img_data = requests.get(p.photo.url, timeout=15).content
+                except Exception:
+                    p.photo.seek(0)
+                    img_data = p.photo.read()
+                f = BytesIO(img_data)
+                f.name = getattr(p.photo, "name", "photo.jpg")
+                enc = get_face_encoding_from_upload(f)
+                if enc:
+                    p.face_encoding = enc
+                    p.processing_status = ReportPhoto.ProcessingStatus.PROCESSED
+                    p.save(update_fields=["face_encoding", "processing_status"])
+                    logger.info("Successfully auto-encoded photo #%d for report #%d", p.pk, p.report_id)
+        except Exception as heal_err:
+            logger.warning("Could not auto-heal photo #%d: %s", p.pk, heal_err)
+
+    photos = qs.filter(face_encoding__isnull=False)
 
     if _vector_storage_available():
         from pgvector.django import L2Distance

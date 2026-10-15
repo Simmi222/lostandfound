@@ -8,6 +8,7 @@ export default function Search() {
   const [query, setQuery] = useState('')
   const [nameResults, setNameResults] = useState<Person[]>([])
   const [photoResults, setPhotoResults] = useState<Match[]>([])
+  const [photoMessage, setPhotoMessage] = useState('')
   const [searchedName, setSearchedName] = useState(false)
   const [searchedPhoto, setSearchedPhoto] = useState(false)
   const [busy, setBusy] = useState(false)
@@ -43,12 +44,14 @@ export default function Search() {
     }
     setBusy(true)
     setError('')
+    setPhotoMessage('')
     setSearchedPhoto(true)
     setSearchedName(false)
     setNameResults([])
     try {
-      const results = await searchByPhoto(file)
-      setPhotoResults(results)
+      const data = await searchByPhoto(file)
+      setPhotoResults(data.matches)
+      setPhotoMessage(data.message || '')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Photo search failed.')
     } finally {
@@ -122,9 +125,13 @@ export default function Search() {
       {/* When no match found */}
       {!busy && !error && searchedPhoto && photoResults.length === 0 && (
         <div className="panel" style={{ textAlign: 'center', padding: '40px 24px', marginTop: 28 }}>
-          <p className="candle mono" style={{ fontSize: 20, fontWeight: 600 }}>User not found</p>
+          <p className="candle mono" style={{ fontSize: 20, fontWeight: 600 }}>
+            {photoMessage || 'User not found'}
+          </p>
           <p className="faint" style={{ marginTop: 8 }}>
-            No matching person found for the uploaded photo in our database.
+            {photoMessage
+              ? 'Please try uploading a clearer, front-facing photo without obstruction.'
+              : 'No matching person found for the uploaded photo in our database.'}
           </p>
         </div>
       )}

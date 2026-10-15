@@ -205,11 +205,11 @@ export async function submitReport(report: CaseReport, onProgress?: (pct: number
   return { caseId: `REPORT-${created.id}` }
 }
 
-export async function searchByPhoto(photo: File): Promise<Match[]> {
+export async function searchByPhoto(photo: File): Promise<{ matches: Match[]; message?: string }> {
   const form = new FormData()
   form.append('photo', photo)
-  const data = await request<{ matches: Match[] }>('/matches/search/', { method: 'POST', body: form })
-  return data.matches
+  const data = await request<{ matches: Match[]; message?: string }>('/matches/search/', { method: 'POST', body: form })
+  return { matches: data.matches ?? [], message: data.message }
 }
 
 export async function searchByName(query: string): Promise<Person[]> {
