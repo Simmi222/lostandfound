@@ -101,18 +101,21 @@ WSGI_APPLICATION = "FaceMatchBackend.wsgi.application"
 # ─── Database ─────────────────────────────────────────────────────────────────
 # Default: SQLite for local dev.
 # Set DATABASE_URL in production for PostgreSQL.
-DATABASES = {
-    "default": dj_database_url.config(
-        default=os.getenv("DATABASE_URL"),
-        conn_max_age=600,
-    )
-}
-
-# PostgreSQL override via env
-_DB_URL = os.environ.get("DATABASE_URL", "")
-if _DB_URL.startswith(("postgresql", "postgres")):
-    import dj_database_url  # pip install dj-database-url
-    DATABASES["default"] = dj_database_url.parse(_DB_URL)
+_DB_URL = os.environ.get("DATABASE_URL", "").strip()
+if _DB_URL:
+    DATABASES = {
+        "default": dj_database_url.parse(
+            _DB_URL,
+            conn_max_age=600,
+        )
+    }
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
+    }
 
 # ─── Password validation ───────────────────────────────────────────────────────
 AUTH_PASSWORD_VALIDATORS = [

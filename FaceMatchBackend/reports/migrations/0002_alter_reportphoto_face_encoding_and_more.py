@@ -4,6 +4,82 @@ import pgvector.django.indexes
 import pgvector.django.vector
 from django.db import migrations
 
+def setup_pgvector(apps, schema_editor):
+    if schema_editor.connection.vendor != "postgresql":
+        return
+
+    with schema_editor.connection.cursor() as cursor:
+        cursor.execute(
+            """
+            DO $$
+            BEGIN
+                IF EXISTS (
+                    SELECT 1
+                    FROM pg_available_extensions
+                    WHERE name = 'vector'
+                ) THEN
+                    CREATE EXTENSION IF NOT EXISTS vector;
+                END IF;
+            END
+            $$;
+            """
+        )
+
+
+def convert_face_encoding_to_vector(apps, schema_editor):
+    if schema_editor.connection.vendor != "postgresql":
+        return
+
+    with schema_editor.connection.cursor() as cursor:
+        cursor.execute(
+            """
+            DO $$
+            BEGIN
+                IF EXISTS (
+                    SELECT 1
+                    FROM pg_extension
+                    WHERE extname = 'vector'
+                ) THEN
+                    ALTER TABLE reports_reportphoto
+                    ALTER COLUMN face_encoding TYPE vector(128)
+                    USING CASE
+                        WHEN face_encoding IS NULL THEN NULL
+                        ELSE face_encoding::text::vector
+                    END;
+                END IF;
+            END
+            $$;
+            """
+        )
+
+
+def create_face_encoding_index(apps, schema_editor):
+    if schema_editor.connection.vendor != "postgresql":
+        return
+
+    with schema_editor.connection.cursor() as cursor:
+        cursor.execute(
+            """
+            DO $$
+            BEGIN
+                IF EXISTS (
+                    SELECT 1
+                    FROM pg_extension
+                    WHERE extname = 'vector'
+                ) THEN
+                    CREATE INDEX report_photo_face_hnsw
+                    ON reports_reportphoto
+                    USING hnsw (face_encoding vector_l2_ops)
+                    WITH (m = 16, ef_construction = 64);
+                END IF;
+            END
+            $$;
+            """
+        )
+
+
+def noop_reverse(apps, schema_editor):
+    pass
 
 class Migration(migrations.Migration):
 
@@ -12,50 +88,15 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunSQL(
-            sql="""
-                DO $$
-                BEGIN
-                    IF EXISTS (
-                        SELECT 1
-                        FROM pg_available_extensions
-                        WHERE name = 'vector'
-                    ) THEN
-                        CREATE EXTENSION IF NOT EXISTS vector;
-                    ELSE
-                        RAISE NOTICE 'pgvector is not installed; keeping JSON face encodings';
-                    END IF;
-                END
-                $$;
-            """,
-            reverse_sql="DROP EXTENSION IF EXISTS vector",
+        migrations.RunPython(
+            setup_pgvector,
+            reverse_code=noop_reverse,
         ),
         migrations.SeparateDatabaseAndState(
             database_operations=[
-                migrations.RunSQL(
-                    sql="""
-                        DO $$
-                        BEGIN
-                            IF EXISTS (
-                                SELECT 1
-                                FROM pg_extension
-                                WHERE extname = 'vector'
-                            ) THEN
-                                ALTER TABLE reports_reportphoto
-                                ALTER COLUMN face_encoding TYPE vector(128)
-                                USING CASE
-                                    WHEN face_encoding IS NULL THEN NULL
-                                    ELSE face_encoding::text::vector
-                                END;
-                            END IF;
-                        END
-                        $$;
-                    """,
-                    reverse_sql=(
-                        "ALTER TABLE reports_reportphoto "
-                        "ALTER COLUMN face_encoding TYPE jsonb "
-                        "USING face_encoding::text::jsonb"
-                    ),
+                migrations.RunPython(
+                    convert_face_encoding_to_vector,
+                    reverse_code=noop_reverse,
                 ),
             ],
             state_operations=[
@@ -72,26 +113,9 @@ class Migration(migrations.Migration):
         ),
         migrations.SeparateDatabaseAndState(
             database_operations=[
-                migrations.RunSQL(
-                    sql="""
-                        DO $$
-                        BEGIN
-                            IF EXISTS (
-                                SELECT 1
-                                FROM pg_extension
-                                WHERE extname = 'vector'
-                            ) THEN
-                                CREATE INDEX report_photo_face_hnsw
-                                ON reports_reportphoto
-                                USING hnsw (face_encoding vector_l2_ops)
-                                WITH (m = 16, ef_construction = 64);
-                            END IF;
-                        END
-                        $$;
-                    """,
-                    reverse_sql=(
-                        "DROP INDEX IF EXISTS report_photo_face_hnsw"
-                    ),
+                migrations.RunPython(
+                    create_face_encoding_index,
+                    reverse_code=noop_reverse,
                 ),
             ],
             state_operations=[
