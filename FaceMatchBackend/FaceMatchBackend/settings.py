@@ -185,11 +185,20 @@ MEDIA_URL  = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
 if _CLOUDINARY_CONFIGURED:
-    CLOUDINARY_STORAGE = {
-        "CLOUD_NAME": os.environ.get("CLOUDINARY_CLOUD_NAME", ""),
-        "API_KEY":    os.environ.get("CLOUDINARY_API_KEY", ""),
-        "API_SECRET": os.environ.get("CLOUDINARY_API_SECRET", ""),
-    }
+    # If individual keys are present, set CLOUDINARY_STORAGE dict explicitly.
+    # If only CLOUDINARY_URL is set (e.g. Render), cloudinary library reads it
+    # automatically — do NOT override with an empty dict.
+    _cloud_name = os.environ.get("CLOUDINARY_CLOUD_NAME", "")
+    _api_key    = os.environ.get("CLOUDINARY_API_KEY", "")
+    _api_secret = os.environ.get("CLOUDINARY_API_SECRET", "")
+    if _cloud_name and _api_key and _api_secret:
+        CLOUDINARY_STORAGE = {
+            "CLOUD_NAME": _cloud_name,
+            "API_KEY":    _api_key,
+            "API_SECRET": _api_secret,
+        }
+    # else: CLOUDINARY_URL env var is present — cloudinary picks it up on its own
+
     STORAGES = {
         "default": {
             "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
