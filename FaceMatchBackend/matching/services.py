@@ -16,8 +16,8 @@ logger = logging.getLogger(__name__)
 def get_face_encoding(image_url: str) -> Optional[list]:
     """Get a face encoding from the Modal API."""
 
-    api_url = os.environ["FACE_MATCH_API_URL"]
-    api_key = os.environ["FACE_MATCH_API_KEY"]
+    api_url = os.environ.get("FACE_MATCH_API_URL", "https://simmi222--lostfound-face-api-web-app.us-east.modal.run/encode")
+    api_key = os.environ.get("FACE_MATCH_API_KEY", "s-Yx0M586XraLOCxuEjOyFzUP4s5WcsIuhaAWjCQRvY")
 
     response = requests.post(
         api_url,
@@ -28,18 +28,20 @@ def get_face_encoding(image_url: str) -> Optional[list]:
         timeout=90,
     )
 
+    if response.status_code == 422:
+        return None
     response.raise_for_status()
     result = response.json()
 
-    return result["encoding"]
+    return result.get("encoding")
 
 
 def get_face_encoding_from_upload(uploaded_file) -> Optional[list]:
     """Send an uploaded image to the Modal face-encoding service."""
 
-    api_url = os.environ["FACE_MATCH_API_URL"].rstrip("/")
+    api_url = os.environ.get("FACE_MATCH_API_URL", "https://simmi222--lostfound-face-api-web-app.us-east.modal.run/encode").rstrip("/")
     upload_api_url = api_url.removesuffix("/encode") + "/encode-upload"
-    api_key = os.environ["FACE_MATCH_API_KEY"]
+    api_key = os.environ.get("FACE_MATCH_API_KEY", "s-Yx0M586XraLOCxuEjOyFzUP4s5WcsIuhaAWjCQRvY")
 
     uploaded_file.seek(0)
     response = requests.post(
@@ -54,8 +56,10 @@ def get_face_encoding_from_upload(uploaded_file) -> Optional[list]:
         },
         timeout=90,
     )
+    if response.status_code == 422:
+        return None
     response.raise_for_status()
-    return response.json()["encoding"]
+    return response.json().get("encoding")
 
 
 MATCH_TOLERANCE: float = getattr(settings, "FACE_MATCH_TOLERANCE", 0.58)

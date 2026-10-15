@@ -1,6 +1,4 @@
 
-from __future__ import annotations
-
 import os
 import hmac
 from io import BytesIO

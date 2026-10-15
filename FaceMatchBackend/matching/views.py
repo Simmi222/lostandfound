@@ -1,3 +1,4 @@
+import logging
 from rest_framework import generics, permissions, status
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.response import Response
@@ -8,6 +9,8 @@ from .services import (
     _search_candidates,
     get_face_encoding_from_upload,
 )
+
+logger = logging.getLogger(__name__)
 
 from reports.models import PersonReport
 from reports.serializers import PersonReportSerializer, SimilarReportMatchSerializer
@@ -142,24 +145,40 @@ class SearchPhotoView(APIView):
 
             candidates = _search_candidates(encoding, "MISSING")[:20]
 
-            matches = [{
-                "photo_id": photo.pk,
-                "report_id": photo.report_id,
-                "kind": photo.report.kind,
-                "name": photo.report.name or "Unknown",
-                "age": photo.report.age,
-                "description": photo.report.description,
-                "last_seen_place": photo.report.last_seen_place,
-                "created_by_username": photo.report.created_by.username,
-                "photo_url": request.build_absolute_uri(photo.photo.url),
-                "face_distance": round(float(distance), 4),
-                "candidate_match": True,
-            } for distance, photo in candidates]
+            matches = []
+            for distance, photo in candidates:
+                try:
+                    photo_url = request.build_absolute_uri(photo.photo.url) if photo.photo else ""
+                except Exception:
+                    photo_url = ""
+                matches.append({
+                    "photo_id": photo.pk,
+                    "report_id": photo.report_id,
+                    "kind": photo.report.kind,
+                    "name": photo.report.name or "Unknown",
+                    "age": photo.report.age,
+                    "description": photo.report.description,
+                    "last_seen_place": photo.report.last_seen_place,
+                    "created_by_username": photo.report.created_by.username,
+                    "photo_url": photo_url,
+                    "face_distance": round(float(distance), 4),
+                    "candidate_match": True,
+                })
 
             return Response({"matches": matches})
 
+        except Exception as exc:
+            logger.exception("Photo search error: %s", exc)
+            return Response(
+                {"error": f"Search failed: {str(exc)}", "matches": []},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         finally:
-            uploaded_photo.close()
+            if uploaded_photo:
+                try:
+                    uploaded_photo.close()
+                except Exception:
+                    pass
 
 
 class SearchNameView(APIView):
