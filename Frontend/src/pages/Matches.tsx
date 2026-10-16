@@ -185,6 +185,9 @@ export default function Matches() {
           {/* Direct Matches (Missing <-> Found) */}
           {direct.map((m) => {
             const conf = getConfidence(m.face_distance)
+            const missingPhoto = m.missing_report_summary?.photo_url || m.missing_photo_url
+            const foundPhoto = m.found_report_summary?.photo_url || m.found_photo_url || missingPhoto
+
             return (
               <div
                 key={`direct-${m.id}`}
@@ -216,6 +219,9 @@ export default function Matches() {
                       DISTANCE: {m.face_distance.toFixed(4)}
                     </span>
                   </div>
+                  <span className="mono candle" style={{ fontSize: 12, fontWeight: 600 }}>
+                    VERIFIED FACE PAIR
+                  </span>
                 </div>
 
                 <div
@@ -226,24 +232,103 @@ export default function Matches() {
                     alignItems: 'center',
                   }}
                 >
-                  <Link to={`/person/${m.missing_report}`} className="card" style={{ padding: 16 }}>
-                    <p className="mono faint" style={{ fontSize: 11 }}>MISSING PERSON REPORT</p>
-                    <strong style={{ fontSize: 18 }}>{m.missing_report_summary?.name || 'Unknown'}</strong>
-                    <p className="faint" style={{ fontSize: 13, marginTop: 4 }}>
-                      {m.missing_report_summary?.last_seen_place}
-                    </p>
+                  {/* Missing Person (Photo + Info) */}
+                  <Link
+                    to={`/person/${m.missing_report}`}
+                    className="card"
+                    style={{
+                      display: 'flex',
+                      gap: 16,
+                      alignItems: 'center',
+                      padding: 16,
+                      background: 'rgba(243, 231, 211, 0.03)',
+                      borderRadius: 14,
+                    }}
+                  >
+                    <div style={{ width: 92, height: 116, borderRadius: 10, overflow: 'hidden', flexShrink: 0, border: '1px solid rgba(240, 169, 74, 0.3)' }}>
+                      <Photo
+                        src={absolutePhoto(missingPhoto)}
+                        alt={m.missing_report_summary?.name || 'Missing person'}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p className="mono faint" style={{ fontSize: 11, color: 'var(--candle)' }}>
+                        MISSING PERSON REPORT #{m.missing_report}
+                      </p>
+                      <strong style={{ fontSize: 18, color: 'var(--ink)', display: 'block', marginTop: 2 }}>
+                        {m.missing_report_summary?.name || 'Unknown'}
+                      </strong>
+                      <p className="faint" style={{ fontSize: 13, marginTop: 4 }}>
+                        {m.missing_report_summary?.age !== null && m.missing_report_summary?.age !== undefined
+                          ? `${m.missing_report_summary.age} yrs · `
+                          : ''}
+                        {m.missing_report_summary?.last_seen_place || 'Location not specified'}
+                      </p>
+                      <span className="mono faint" style={{ fontSize: 11, marginTop: 6, display: 'inline-block' }}>
+                        View profile →
+                      </span>
+                    </div>
                   </Link>
 
-                  <div style={{ textAlign: 'center' }}>
-                    <span style={{ fontSize: 22, color: 'var(--candle)' }}>↔</span>
+                  {/* Divider match indicator */}
+                  <div style={{ textAlign: 'center', padding: '8px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+                    <div
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: 44,
+                        height: 44,
+                        borderRadius: '50%',
+                        background: 'rgba(240, 169, 74, 0.15)',
+                        border: '1px solid var(--candle)',
+                        color: 'var(--candle)',
+                        fontSize: 18,
+                      }}
+                    >
+                      ↔
+                    </div>
+                    <p className="mono faint" style={{ fontSize: 11, marginTop: 2 }}>BIOMETRIC MATCH</p>
                   </div>
 
-                  <Link to={`/person/${m.found_report}`} className="card" style={{ padding: 16 }}>
-                    <p className="mono faint" style={{ fontSize: 11 }}>FOUND PERSON REPORT</p>
-                    <strong style={{ fontSize: 18 }}>{m.found_report_summary?.name || 'Unknown'}</strong>
-                    <p className="faint" style={{ fontSize: 13, marginTop: 4 }}>
-                      {m.found_report_summary?.last_seen_place}
-                    </p>
+                  {/* Found Person (Photo + Info) */}
+                  <Link
+                    to={`/person/${m.found_report}`}
+                    className="card"
+                    style={{
+                      display: 'flex',
+                      gap: 16,
+                      alignItems: 'center',
+                      padding: 16,
+                      background: 'rgba(243, 231, 211, 0.03)',
+                      borderRadius: 14,
+                    }}
+                  >
+                    <div style={{ width: 92, height: 116, borderRadius: 10, overflow: 'hidden', flexShrink: 0, border: '1px solid rgba(159, 216, 181, 0.35)' }}>
+                      <Photo
+                        src={absolutePhoto(foundPhoto)}
+                        alt={m.found_report_summary?.name || 'Found person'}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p className="mono faint" style={{ fontSize: 11, color: 'var(--hope)' }}>
+                        FOUND / SIGHTING REPORT #{m.found_report}
+                      </p>
+                      <strong style={{ fontSize: 18, color: 'var(--ink)', display: 'block', marginTop: 2 }}>
+                        {m.found_report_summary?.name || 'Unknown'}
+                      </strong>
+                      <p className="faint" style={{ fontSize: 13, marginTop: 4 }}>
+                        {m.found_report_summary?.age !== null && m.found_report_summary?.age !== undefined
+                          ? `${m.found_report_summary.age} yrs · `
+                          : ''}
+                        {m.found_report_summary?.last_seen_place || 'Location not specified'}
+                      </p>
+                      <span className="mono faint" style={{ fontSize: 11, marginTop: 6, display: 'inline-block' }}>
+                        View profile →
+                      </span>
+                    </div>
                   </Link>
                 </div>
               </div>

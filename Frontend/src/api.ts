@@ -111,8 +111,13 @@ type Paginated<T> = { results: T[] }
 
 export const absolutePhoto = (url: string | null | undefined) => {
   if (!url) return ''
+  if (url.includes('127.0.0.1:8000') || url.includes('localhost:8000')) {
+    const rel = url.replace(/^https?:\/\/(127\.0\.0\.1|localhost):8000/, '')
+    return `${API_ORIGIN}${rel}`
+  }
   return url.startsWith('http') ? url : `${API_ORIGIN}${url}`
 }
+
 
 export const toPerson = (report: ApiReport): Person => ({
   ...report,
@@ -282,6 +287,7 @@ export type DirectMatchItem = {
     age: number | null
     last_seen_place: string
     description: string
+    photo_url?: string | null
   } | null
   found_report_summary: {
     id: number
@@ -289,7 +295,10 @@ export type DirectMatchItem = {
     age: number | null
     last_seen_place: string
     description: string
+    photo_url?: string | null
   } | null
+  missing_photo_url?: string | null
+  found_photo_url?: string | null
   face_distance: number
   review_status: string
   created_at: string
