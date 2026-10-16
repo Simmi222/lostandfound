@@ -116,7 +116,9 @@ export default function Report() {
       <div className="page" style={{ maxWidth: 860, margin: '20px auto 60px' }}>
         <div style={{ textAlign: 'center', marginBottom: 40 }}>
           <p className="eyebrow mono" style={{ marginBottom: 14 }}>Report someone</p>
-          <h1 className="h2" style={{ marginBottom: 16 }}>Who would you like to report?</h1>
+          <h1 style={{ fontFamily: 'var(--sans)', fontSize: 'clamp(28px, 4vw, 44px)', fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.15, marginBottom: 16 }}>
+            Who would you like to report?
+          </h1>
           <p className="muted" style={{ maxWidth: '54ch', margin: '0 auto', fontSize: 16, lineHeight: 1.6 }}>
             Please select an option. Relative reports are for family members, while Stranger reports are for sighted people on the street.
           </p>
@@ -143,8 +145,10 @@ export default function Report() {
               <Icon.users size={24} />
             </div>
             <div>
-              <h2 className="h3" style={{ fontSize: 22, color: 'var(--ink)' }}>A Relative / Family Member</h2>
-              <span className="mono" style={{ fontSize: 11, color: 'var(--candle)', display: 'block', marginTop: 4 }}>
+              <h2 style={{ fontFamily: 'var(--sans)', fontSize: 22, fontWeight: 700, color: 'var(--ink)', letterSpacing: '-0.01em' }}>
+                A Relative / Family Member
+              </h2>
+              <span className="mono" style={{ fontSize: 11, color: 'var(--candle)', display: 'block', marginTop: 6 }}>
                 Missing Person Report
               </span>
             </div>
@@ -176,8 +180,10 @@ export default function Report() {
               <Icon.eye size={24} />
             </div>
             <div>
-              <h2 className="h3" style={{ fontSize: 22, color: 'var(--ink)' }}>A Sighted Stranger</h2>
-              <span className="mono" style={{ fontSize: 11, color: 'var(--hope)', display: 'block', marginTop: 4 }}>
+              <h2 style={{ fontFamily: 'var(--sans)', fontSize: 22, fontWeight: 700, color: 'var(--ink)', letterSpacing: '-0.01em' }}>
+                A Sighted Stranger
+              </h2>
+              <span className="mono" style={{ fontSize: 11, color: 'var(--hope)', display: 'block', marginTop: 6 }}>
                 Sighting / Found Report
               </span>
             </div>
@@ -192,6 +198,7 @@ export default function Report() {
       </div>
     )
   }
+
 
   if (reportTarget === 'stranger') {
     return <StrangerReportForm onBack={() => setReportTarget('choose')} />
@@ -552,7 +559,9 @@ function StrangerReportForm({ onBack }: { onBack: () => void }) {
             <Icon.check size={32} />
           </div>
           <p className="mono candle">{caseId}</p>
-          <h2 className="h3">Thank you for reporting this sighting.</h2>
+          <h2 style={{ fontFamily: 'var(--sans)', fontSize: 24, fontWeight: 700, color: 'var(--ink)' }}>
+            Thank you for reporting this sighting.
+          </h2>
           <p className="muted" style={{ lineHeight: 1.6 }}>
             The stranger photo has been submitted and facial recognition is currently comparing it against all missing family reports. If a match is verified, the family and local coordinators will be alerted.
           </p>
@@ -573,11 +582,14 @@ function StrangerReportForm({ onBack }: { onBack: () => void }) {
 
       <div style={{ marginBottom: 32 }}>
         <p className="eyebrow mono" style={{ color: 'var(--hope)', marginBottom: 12 }}>Stranger Sighting Report</p>
-        <SplitTitle className="h2" text="Help a stranger find their way home." />
+        <h1 style={{ fontFamily: 'var(--sans)', fontSize: 'clamp(28px, 4vw, 44px)', fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.15 }}>
+          Help a stranger find their way home.
+        </h1>
         <p className="muted" style={{ marginTop: 12, maxWidth: '58ch' }}>
           Stranger photo, name/alias, contact number, and location are mandatory. All other details like clothes and height are optional.
         </p>
       </div>
+
 
       <form className="panel" onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 24, padding: '32px' }}>
         {error && <p className="form-error">{error}</p>}

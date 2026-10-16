@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { AnimatePresence, motion, useScroll, useTransform } from 'framer-motion'
 import { getPerson, getCurrentUser, deleteReport } from '../api'
 import type { Person } from '../api'
-import { Icon, Magnetic, Photo, Reveal, SplitTitle, TimeApart } from '../components/ui'
+import { Icon, Magnetic, Photo, Reveal, SplitTitle, TimeApart, DeleteConfirmModal } from '../components/ui'
 import { Footer } from '../components/Chrome'
 import { SightingModal } from '../components/Sighting'
 
@@ -17,6 +17,7 @@ export default function PersonPage() {
   const [poster, setPoster] = useState(false)
   const [copied, setCopied] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
   const currentUser = getCurrentUser()
   const { scrollY } = useScroll()
   const photoScale = useTransform(scrollY, [0, 800], [1, 1.12])
@@ -29,19 +30,19 @@ export default function PersonPage() {
         (person.created_by && currentUser.id === person.created_by))
   )
 
-  const handleDelete = async () => {
+  const confirmDelete = async () => {
     if (!person) return
-    const ok = window.confirm(`Are you sure you want to delete the report for ${person.name}?`)
-    if (!ok) return
     setDeleting(true)
     try {
       await deleteReport(Number(id), (person.kind as 'MISSING' | 'FOUND') || 'MISSING')
+      setShowDeleteModal(false)
       navigate('/dashboard')
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Failed to delete report.')
       setDeleting(false)
     }
   }
+
 
   useEffect(() => {
     getPerson(id).then((p) => setPerson(p ?? null))
@@ -127,7 +128,7 @@ export default function PersonPage() {
                 {canDelete && (
                   <button
                     className="btn btn-ghost"
-                    onClick={handleDelete}
+                    onClick={() => setShowDeleteModal(true)}
                     disabled={deleting}
                     style={{
                       color: '#ff6b6b',
@@ -138,6 +139,7 @@ export default function PersonPage() {
                     {deleting ? 'Deleting…' : 'Delete report'}
                   </button>
                 )}
+
               </div>
             </div>
 
@@ -187,7 +189,16 @@ export default function PersonPage() {
           </div>
         </div>
       </div>
+      <DeleteConfirmModal
+        open={showDeleteModal}
+        name={person?.name || 'this person'}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={confirmDelete}
+        busy={deleting}
+      />
       <Footer />
+
+
       <SightingModal person={seen ? person : null} onClose={() => setSeen(false)} />
       <PosterModal person={poster ? person : null} onClose={() => setPoster(false)} />
     </>

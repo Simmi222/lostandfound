@@ -134,27 +134,23 @@ export function Nav() {
           </Link>
         </Magnetic>
         {loggedIn ? (
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10, marginLeft: 6 }}>
-            <span className="mono faint" style={{ fontSize: 11 }}>
-              Signed in (<b style={{ color: 'var(--candle)' }}>{user?.username || 'You'}</b>)
-            </span>
-            <button
-              className="btn btn-ghost btn-sm"
-              onClick={() => {
-                logout()
-                setLoggedIn(false)
-                setUser(null)
-                navigate('/login')
-              }}
-            >
-              Sign out
-            </button>
-          </div>
+          <button
+            className="btn btn-ghost btn-sm"
+            onClick={() => {
+              logout()
+              setLoggedIn(false)
+              setUser(null)
+              navigate('/login')
+            }}
+          >
+            Sign out
+          </button>
         ) : (
           <Link to="/login" className="btn btn-ghost btn-sm">
             Sign in
           </Link>
         )}
+
 
       </nav>
       <button className="nav-menu-btn btn btn-ghost btn-sm" onClick={() => setOpen((o) => !o)} aria-label="Menu" aria-expanded={open}>

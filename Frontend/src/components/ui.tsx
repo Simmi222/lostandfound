@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useRef, useState, type ImgHTMLAttributes, type ReactNode } from 'react'
-import { animate, motion, useInView, useMotionValue, useSpring } from 'framer-motion'
+import { AnimatePresence, animate, motion, useInView, useMotionValue, useSpring } from 'framer-motion'
 
 export function Photo({ alt = '', ...rest }: ImgHTMLAttributes<HTMLImageElement>) {
   const [failed, setFailed] = useState(false)
@@ -179,3 +179,110 @@ export const Icon = {
   heart: ico(<path d="M12 20s-7-4.4-7-10a4 4 0 017-2.6A4 4 0 0119 10c0 5.6-7 10-7 10z" />),
   bell: ico(<><path d="M6 16V11a6 6 0 0112 0v5l2 2H4z" /><path d="M10 21h4" /></>),
 }
+
+export function DeleteConfirmModal({
+  open,
+  name,
+  onClose,
+  onConfirm,
+  busy = false,
+}: {
+  open: boolean
+  name: string
+  onClose: () => void
+  onConfirm: () => void
+  busy?: boolean
+}) {
+  return (
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 9999,
+            background: 'rgba(0, 0, 0, 0.75)',
+            backdropFilter: 'blur(8px)',
+            display: 'grid',
+            placeItems: 'center',
+            padding: 20,
+          }}
+          onClick={onClose}
+        >
+          <motion.div
+            initial={{ scale: 0.95, opacity: 0, y: 16 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.95, opacity: 0, y: 16 }}
+            transition={{ duration: 0.2 }}
+            className="panel"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              maxWidth: 440,
+              width: '100%',
+              padding: '28px 24px',
+              borderRadius: 20,
+              border: '1px solid rgba(255, 107, 107, 0.35)',
+              background: 'linear-gradient(145deg, rgba(38, 22, 22, 0.96), rgba(26, 15, 15, 0.98))',
+              boxShadow: '0 24px 60px rgba(0, 0, 0, 0.65)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 16,
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+              <div
+                style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: 12,
+                  background: 'rgba(255, 107, 107, 0.15)',
+                  color: '#ff6b6b',
+                  display: 'grid',
+                  placeItems: 'center',
+                  flexShrink: 0,
+                }}
+              >
+                <Icon.x size={22} />
+              </div>
+              <div>
+                <h3 style={{ fontSize: 18, fontWeight: 600, color: '#f3e7d3' }}>Delete this report?</h3>
+                <p className="faint" style={{ fontSize: 13, marginTop: 2 }}>This action cannot be undone.</p>
+              </div>
+            </div>
+            <p style={{ fontSize: 14, color: 'rgba(243, 231, 211, 0.85)', lineHeight: 1.5 }}>
+              Are you sure you want to permanently delete the report for <strong>"{name || 'this person'}"</strong>?
+            </p>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 10 }}>
+              <button
+                type="button"
+                className="btn btn-ghost btn-sm"
+                disabled={busy}
+                onClick={onClose}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn btn-light btn-sm"
+                style={{
+                  background: '#ff6b6b',
+                  color: '#fff',
+                  borderColor: '#ff6b6b',
+                  fontWeight: 600,
+                }}
+                disabled={busy}
+                onClick={onConfirm}
+              >
+                {busy ? 'Deleting…' : 'Yes, delete report'}
+              </button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  )
+}
+

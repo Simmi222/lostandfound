@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getDashboard, absolutePhoto, getCurrentUser, deleteReport, type ApiReport } from '../api'
-import { Photo } from '../components/ui'
+import { Photo, DeleteConfirmModal } from '../components/ui'
 import { Footer } from '../components/Chrome'
 
 export default function Dashboard() {
@@ -9,6 +9,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [deletingId, setDeletingId] = useState<number | null>(null)
+  const [reportToDelete, setReportToDelete] = useState<ApiReport | null>(null)
   const currentUser = getCurrentUser()
 
   const load = async () => {
@@ -23,20 +24,26 @@ export default function Dashboard() {
     }
   }
 
-  const handleDelete = async (report: ApiReport) => {
-    const ok = window.confirm(`Are you sure you want to delete the report for "${report.name || 'this person'}"?`)
-    if (!ok) return
+  const handleDelete = (report: ApiReport) => {
+    setReportToDelete(report)
+  }
 
-    setDeletingId(report.id)
+  const confirmDelete = async () => {
+    if (!reportToDelete) return
+    const id = reportToDelete.id
+    const kind = reportToDelete.kind
+    setDeletingId(id)
     try {
-      await deleteReport(report.id, report.kind)
-      setReports((prev) => prev.filter((r) => r.id !== report.id))
+      await deleteReport(id, kind)
+      setReports((prev) => prev.filter((r) => r.id !== id))
+      setReportToDelete(null)
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Failed to delete report.')
     } finally {
       setDeletingId(null)
     }
   }
+
 
   const canDelete = (r: ApiReport) =>
     Boolean(
@@ -186,7 +193,15 @@ export default function Dashboard() {
           </div>
         </section>
       </div>
+      <DeleteConfirmModal
+        open={Boolean(reportToDelete)}
+        name={reportToDelete?.name || 'this report'}
+        onClose={() => setReportToDelete(null)}
+        onConfirm={confirmDelete}
+        busy={Boolean(deletingId)}
+      />
       <Footer />
     </>
   )
 }
+
