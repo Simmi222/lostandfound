@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { AnimatePresence, motion, useScroll, useTransform } from 'framer-motion'
 import { getPerson, getCurrentUser, deleteReport } from '../api'
 import type { Person } from '../api'
-import { Icon, Magnetic, Photo, Reveal, SplitTitle, TimeApart, DeleteConfirmModal } from '../components/ui'
+import { Icon, Magnetic, Photo, Reveal, SplitTitle, TimeApart, DeleteConfirmModal, StatusBadge, isReportFound } from '../components/ui'
 import { Footer } from '../components/Chrome'
 import { SightingModal } from '../components/Sighting'
 
@@ -107,23 +107,9 @@ export default function PersonPage() {
           <div className="person-body">
             <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                <span
-                  className="mono"
-                  style={{
-                    fontSize: 12,
-                    fontWeight: 700,
-                    padding: '3px 10px',
-                    borderRadius: 999,
-                    background: (person.kind || 'MISSING') === 'MISSING' ? 'rgba(240, 169, 74, 0.15)' : 'rgba(159, 216, 181, 0.15)',
-                    color: (person.kind || 'MISSING') === 'MISSING' ? 'var(--candle)' : 'var(--hope)',
-                    border: `1px solid ${(person.kind || 'MISSING') === 'MISSING' ? 'rgba(240, 169, 74, 0.35)' : 'rgba(159, 216, 181, 0.35)'}`,
-                    letterSpacing: '0.04em',
-                  }}
-                >
-                  {person.kind || 'MISSING'}
-                </span>
+                <StatusBadge report={person} size="md" />
                 <p className="mono candle" style={{ margin: 0 }}>
-                  {person.kind === 'FOUND' ? 'Sighted in' : 'Missing from'} {person.city || person.lastSeenPlace || 'Unknown location'}
+                  {isReportFound(person) ? 'Found · Sighted in' : 'Missing from'} {person.city || person.lastSeenPlace || 'Unknown location'}
                 </p>
               </div>
 

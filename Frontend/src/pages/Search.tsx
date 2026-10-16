@@ -9,7 +9,7 @@ import {
   type Match,
   type Person,
 } from '../api'
-import { Photo, Icon } from '../components/ui'
+import { Photo, Icon, StatusBadge } from '../components/ui'
 
 export default function Search() {
   const location = useLocation()
@@ -221,21 +221,7 @@ export default function Search() {
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                 <strong style={{ fontSize: 18, color: 'var(--ink)' }}>{person.name}</strong>
-                <span
-                  className="mono"
-                  style={{
-                    fontSize: 11,
-                    fontWeight: 700,
-                    padding: '2px 8px',
-                    borderRadius: 999,
-                    background: (person.kind || 'MISSING') === 'MISSING' ? 'rgba(240, 169, 74, 0.15)' : 'rgba(159, 216, 181, 0.15)',
-                    color: (person.kind || 'MISSING') === 'MISSING' ? 'var(--candle)' : 'var(--hope)',
-                    border: `1px solid ${(person.kind || 'MISSING') === 'MISSING' ? 'rgba(240, 169, 74, 0.35)' : 'rgba(159, 216, 181, 0.35)'}`,
-                    letterSpacing: '0.04em',
-                  }}
-                >
-                  {person.kind || 'MISSING'}
-                </span>
+                <StatusBadge report={person} />
                 {person.age !== null && (
                   <span className="mono faint" style={{ fontSize: 12 }}>{person.age} yrs</span>
                 )}

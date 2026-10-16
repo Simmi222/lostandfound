@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { fetchAllMatches, absolutePhoto, type SimilarMatchItem, type DirectMatchItem } from '../api'
-import { Photo, SplitTitle } from '../components/ui'
+import { Photo, SplitTitle, StatusBadge } from '../components/ui'
 import { Footer } from '../components/Chrome'
 
 export default function Matches() {
@@ -256,9 +256,12 @@ export default function Matches() {
                       <p className="mono faint" style={{ fontSize: 11, color: 'var(--candle)' }}>
                         MISSING PERSON REPORT #{m.missing_report}
                       </p>
-                      <strong style={{ fontSize: 18, color: 'var(--ink)', display: 'block', marginTop: 2 }}>
-                        {m.missing_report_summary?.name || 'Unknown'}
-                      </strong>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 2, flexWrap: 'wrap' }}>
+                        <strong style={{ fontSize: 18, color: 'var(--ink)' }}>
+                          {m.missing_report_summary?.name || 'Unknown'}
+                        </strong>
+                        <StatusBadge report={{ kind: 'FOUND', status: 'VERIFIED' }} />
+                      </div>
                       <p className="faint" style={{ fontSize: 13, marginTop: 4 }}>
                         {m.missing_report_summary?.age !== null && m.missing_report_summary?.age !== undefined
                           ? `${m.missing_report_summary.age} yrs · `
@@ -316,9 +319,12 @@ export default function Matches() {
                       <p className="mono faint" style={{ fontSize: 11, color: 'var(--hope)' }}>
                         FOUND / SIGHTING REPORT #{m.found_report}
                       </p>
-                      <strong style={{ fontSize: 18, color: 'var(--ink)', display: 'block', marginTop: 2 }}>
-                        {m.found_report_summary?.name || 'Unknown'}
-                      </strong>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 2, flexWrap: 'wrap' }}>
+                        <strong style={{ fontSize: 18, color: 'var(--ink)' }}>
+                          {m.found_report_summary?.name || 'Unknown'}
+                        </strong>
+                        <StatusBadge report={{ kind: 'FOUND', status: 'VERIFIED' }} />
+                      </div>
                       <p className="faint" style={{ fontSize: 13, marginTop: 4 }}>
                         {m.found_report_summary?.age !== null && m.found_report_summary?.age !== undefined
                           ? `${m.found_report_summary.age} yrs · `

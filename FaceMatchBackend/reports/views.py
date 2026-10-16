@@ -20,14 +20,18 @@ from matching.services import save_photo_and_match
 
 def _reports_for_kind(kind, request):
     """Return all active reports of a given kind for the public feed."""
+    from django.db.models import Q
     qs = (
         PersonReport.objects
-        .filter(kind=kind, is_active=True)
+        .filter(is_active=True)
         .select_related("created_by")
         .prefetch_related("photos")
         .order_by("-created_at")
     )
-    return qs
+    if kind == "MISSING":
+        return qs.filter(Q(kind="MISSING") | Q(status__in=[PersonReport.Status.VERIFIED, PersonReport.Status.RESOLVED]))
+    return qs.filter(kind=kind)
+
 
 
 # ─────────────────────────────────────────────────────────────────────────────

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getDashboard, absolutePhoto, getCurrentUser, deleteReport, type ApiReport } from '../api'
-import { Photo, DeleteConfirmModal } from '../components/ui'
+import { Photo, DeleteConfirmModal, StatusBadge } from '../components/ui'
 import { Footer } from '../components/Chrome'
 
 export default function Dashboard() {
@@ -131,18 +131,7 @@ export default function Dashboard() {
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                     <strong style={{ fontSize: 18, color: 'var(--ink)' }}>{report.name || 'Unknown'}</strong>
-                    <span
-                      className="mono"
-                      style={{
-                        fontSize: 11,
-                        padding: '2px 8px',
-                        borderRadius: 999,
-                        background: report.kind === 'MISSING' ? 'rgba(240, 169, 74, 0.15)' : 'rgba(159, 216, 181, 0.15)',
-                        color: report.kind === 'MISSING' ? 'var(--candle)' : 'var(--hope)',
-                      }}
-                    >
-                      {report.kind}
-                    </span>
+                    <StatusBadge report={report} />
                     {report.age !== null && (
                       <span className="mono faint" style={{ fontSize: 12 }}>{report.age} yrs</span>
                     )}

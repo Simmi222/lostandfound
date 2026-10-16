@@ -346,9 +346,10 @@ class RecordMatchDecisionView(APIView):
                     }
                 )
 
-            # Update target report status
+            # Update target report status & kind to FOUND
             target_report.status = PersonReport.Status.VERIFIED
-            target_report.save(update_fields=["status"])
+            target_report.kind = "FOUND"
+            target_report.save(update_fields=["status", "kind"])
 
             return Response({
                 "status": "FOUND",

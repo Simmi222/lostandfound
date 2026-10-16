@@ -3,7 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import { listMissing } from '../api'
 import type { Person } from '../api'
-import { Photo, SplitTitle, TimeApart } from '../components/ui'
+import { Photo, SplitTitle, StatusBadge, TimeApart } from '../components/ui'
 import { Footer } from '../components/Chrome'
 
 const ageBands = [
@@ -91,21 +91,7 @@ export default function Stories() {
                       <p className="card-name" style={{ margin: 0 }}>
                         {p.name}{p.age !== null && p.age !== undefined ? `, ${p.age}` : ''}
                       </p>
-                      <span
-                        className="mono"
-                        style={{
-                          fontSize: 11,
-                          fontWeight: 700,
-                          padding: '3px 9px',
-                          borderRadius: 999,
-                          background: (p.kind || 'MISSING') === 'MISSING' ? 'rgba(240, 169, 74, 0.15)' : 'rgba(159, 216, 181, 0.15)',
-                          color: (p.kind || 'MISSING') === 'MISSING' ? 'var(--candle)' : 'var(--hope)',
-                          border: `1px solid ${(p.kind || 'MISSING') === 'MISSING' ? 'rgba(240, 169, 74, 0.35)' : 'rgba(159, 216, 181, 0.35)'}`,
-                          letterSpacing: '0.04em',
-                        }}
-                      >
-                        {p.kind || 'MISSING'}
-                      </span>
+                      <StatusBadge report={p} />
                     </div>
                     <p className="faint" style={{ fontSize: 14, marginTop: 6 }}>Last seen · {p.lastSeenPlace}</p>
                   </div>

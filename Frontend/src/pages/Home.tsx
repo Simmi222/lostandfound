@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { listMissing, type Person } from '../api'
 import { Footer } from '../components/Chrome'
-import { Icon, Photo, SplitTitle, TimeApart } from '../components/ui'
+import { Icon, Photo, SplitTitle, StatusBadge, TimeApart } from '../components/ui'
 
 export default function Home({ ready }: { ready: boolean }) {
   const [reports, setReports] = useState<Person[]>([])
@@ -69,21 +69,7 @@ export default function Home({ ready }: { ready: boolean }) {
                   <p className="card-name" style={{ margin: 0 }}>
                     {person.name}{person.age !== null ? `, ${person.age}` : ''}
                   </p>
-                  <span
-                    className="mono"
-                    style={{
-                      fontSize: 11,
-                      fontWeight: 700,
-                      padding: '3px 9px',
-                      borderRadius: 999,
-                      background: (person.kind || 'MISSING') === 'MISSING' ? 'rgba(240, 169, 74, 0.15)' : 'rgba(159, 216, 181, 0.15)',
-                      color: (person.kind || 'MISSING') === 'MISSING' ? 'var(--candle)' : 'var(--hope)',
-                      border: `1px solid ${(person.kind || 'MISSING') === 'MISSING' ? 'rgba(240, 169, 74, 0.35)' : 'rgba(159, 216, 181, 0.35)'}`,
-                      letterSpacing: '0.04em',
-                    }}
-                  >
-                    {person.kind || 'MISSING'}
-                  </span>
+                  <StatusBadge report={person} />
                 </div>
                 <p className="faint" style={{ fontSize: 14, marginTop: 6 }}>Last seen · {person.lastSeenPlace}</p>
                 <p className="muted" style={{ fontSize: 14, marginTop: 10 }}>{person.description}</p>

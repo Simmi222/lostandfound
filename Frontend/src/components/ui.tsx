@@ -286,3 +286,48 @@ export function DeleteConfirmModal({
   )
 }
 
+export function isReportFound(r: { kind?: string; status?: string } | null | undefined): boolean {
+  if (!r) return false
+  const status = (r.status || '').toUpperCase()
+  const kind = (r.kind || '').toUpperCase()
+  return kind === 'FOUND' || status === 'VERIFIED' || status === 'RESOLVED'
+}
+
+export function StatusBadge({
+  report,
+  size = 'sm',
+}: {
+  report: { kind?: string; status?: string } | null | undefined
+  size?: 'sm' | 'md'
+}) {
+  const found = isReportFound(report)
+  return (
+    <span
+      className="mono"
+      style={{
+        fontSize: size === 'md' ? 12 : 11,
+        fontWeight: 700,
+        padding: size === 'md' ? '3px 10px' : '2px 8px',
+        borderRadius: 999,
+        background: found ? 'rgba(159, 216, 181, 0.15)' : 'rgba(240, 169, 74, 0.15)',
+        color: found ? 'var(--hope)' : 'var(--candle)',
+        border: `1px solid ${found ? 'rgba(159, 216, 181, 0.35)' : 'rgba(240, 169, 74, 0.35)'}`,
+        letterSpacing: '0.04em',
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 4,
+      }}
+    >
+      <span
+        style={{
+          width: 5,
+          height: 5,
+          borderRadius: '50%',
+          background: found ? 'var(--hope)' : 'var(--candle)',
+        }}
+      />
+      {found ? 'FOUND' : 'MISSING'}
+    </span>
+  )
+}
+
