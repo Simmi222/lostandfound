@@ -7,12 +7,14 @@ type DisplayPerson = { id: string | number; name: string; photo: string; from: s
 
 export function SightingModal({ person, onClose }: { person: DisplayPerson | null; onClose: () => void }) {
   const [note, setNote] = useState('')
+  const [photo, setPhoto] = useState<File | null>(null)
   const [state, setState] = useState<'idle' | 'sending' | 'sent'>('idle')
 
   const close = () => {
     onClose()
     setTimeout(() => {
       setNote('')
+      setPhoto(null)
       setState('idle')
     }, 400)
   }
@@ -62,6 +64,22 @@ export function SightingModal({ person, onClose }: { person: DisplayPerson | nul
                     onChange={(e) => setNote(e.target.value)}
                   />
                 </div>
+                <div className="field">
+                  <label className="mono" htmlFor="sighting-photo">Attach photo (optional, but helps verify)</label>
+                  <input
+                    id="sighting-photo"
+                    type="file"
+                    accept="image/*"
+                    className="input"
+                    style={{ paddingTop: 8, paddingBottom: 8 }}
+                    onChange={(e) => setPhoto(e.target.files?.[0] || null)}
+                  />
+                  {photo && (
+                    <p className="mono faint" style={{ fontSize: 11, color: 'var(--candle)' }}>
+                      Photo attached: {photo.name}
+                    </p>
+                  )}
+                </div>
                 <p className="faint" style={{ fontSize: 13 }}>
                   Do not approach if it feels unsafe. If you believe they are in danger right now, call emergency services first.
                 </p>
@@ -72,7 +90,7 @@ export function SightingModal({ person, onClose }: { person: DisplayPerson | nul
                     disabled={!note.trim() || state === 'sending'}
                     onClick={async () => {
                       setState('sending')
-                      await reportSighting(String(person.id), note)
+                      await reportSighting(String(person.id), note, photo)
                       setState('sent')
                     }}
                   >
@@ -81,6 +99,7 @@ export function SightingModal({ person, onClose }: { person: DisplayPerson | nul
                 </div>
               </>
             )}
+
           </motion.div>
         </motion.div>
       )}

@@ -135,6 +135,7 @@ export async function login(username: string, password: string) {
   localStorage.setItem('access', result.tokens.access)
   localStorage.setItem('refresh', result.tokens.refresh)
   localStorage.setItem('user', JSON.stringify(result.user))
+  window.dispatchEvent(new Event('auth-change'))
   return result
 }
 
@@ -146,6 +147,7 @@ export async function register(data: Record<string, unknown>) {
   localStorage.setItem('access', result.tokens.access)
   localStorage.setItem('refresh', result.tokens.refresh)
   localStorage.setItem('user', JSON.stringify(result.user))
+  window.dispatchEvent(new Event('auth-change'))
   return result
 }
 
@@ -153,6 +155,7 @@ export function logout() {
   localStorage.removeItem('access')
   localStorage.removeItem('refresh')
   localStorage.removeItem('user')
+  window.dispatchEvent(new Event('auth-change'))
 }
 
 export const isLoggedIn = () => Boolean(localStorage.getItem('access'))
@@ -181,9 +184,14 @@ export async function getPerson(id: string): Promise<Person | undefined> {
   try {
     return toPerson(await request<ApiReport>(`/reports/missing/${id}/`))
   } catch {
-    return undefined
+    try {
+      return toPerson(await request<ApiReport>(`/reports/found/${id}/`))
+    } catch {
+      return undefined
+    }
   }
 }
+
 
 export async function submitReport(report: CaseReport, onProgress?: (pct: number) => void) {
   const form = new FormData()
@@ -321,12 +329,64 @@ export async function reportSeenPerson(report: SeenReport, photo: File | null) {
   return { sightingId: `SIGHTING-${created.id}` }
 }
 
-export async function reportSighting(personId: string, note: string) {
+export async function reportSighting(personId: string, note: string, photo?: File | null) {
   const form = new FormData()
   form.append('name', `Sighting for report ${personId}`)
   form.append('description', note)
   form.append('last_seen_place', 'Reported by user')
+  form.append('sighted_report_id', personId)
+  if (photo) form.append('images', photo)
   await request('/reports/found/', { method: 'POST', body: form })
 }
 
+export async function recordMatchDecision(
+  reportId: number,
+  decision: 'FOUND' | 'NOT_FOUND',
+  photo?: File | null,
+  faceDistance?: number,
+) {
+  const form = new FormData()
+  form.append('report_id', String(reportId))
+  form.append('decision', decision)
+  if (faceDistance !== undefined) form.append('face_distance', String(faceDistance))
+  if (photo) form.append('photo', photo)
+  return request<{ status: string; message: string; report_id?: number }>('/matches/record-decision/', {
+    method: 'POST',
+    body: form,
+  })
+}
+
+export type StrangerReport = {
+  photo: File
+  strangerName: string
+  contactPhone: string
+  whereSeen: string
+  city?: string
+  wearing?: string
+  height?: string
+  age?: string
+  gender?: string
+  marks?: string
+  details?: string
+}
+
+export async function submitStrangerReport(report: StrangerReport) {
+  const form = new FormData()
+  form.append('name', report.strangerName.trim() || 'Unknown Stranger')
+  if (report.age) form.append('age', report.age)
+  if (report.gender) form.append('gender', report.gender)
+  if (report.height) form.append('height', report.height)
+  const place = [report.whereSeen, report.city].filter(Boolean).join(', ')
+  form.append('last_seen_place', place || 'Location not specified')
+  if (report.wearing) form.append('colour', report.wearing)
+  const desc = [report.details, report.marks].filter(Boolean).join('\n')
+  if (desc) form.append('description', desc)
+  form.append('contact_name', 'Finder / Reporter')
+  form.append('contact_phone', report.contactPhone.trim())
+  form.append('images', report.photo)
+  const created = await request<ApiReport>('/reports/found/', { method: 'POST', body: form })
+  return { caseId: `FOUND-${created.id}` }
+}
+
 export async function requestVerification(_personId: string) {}
+

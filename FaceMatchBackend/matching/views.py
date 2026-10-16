@@ -233,3 +233,127 @@ class SearchNameView(APIView):
             })
 
         return Response({"matches": results})
+
+
+class RecordMatchDecisionView(APIView):
+    """
+    POST /api/matches/record-decision/
+
+    Allows user to confirm or reject a search match.
+    When decision is FOUND:
+      - Creates a corresponding verified report with the searched photo
+      - Saves a verified FaceMatch record
+      - Stores the result permanently in Matched cases
+    """
+    permission_classes = [permissions.IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
+
+    def post(self, request):
+        decision = request.data.get("decision", "").strip().upper()
+        report_id = request.data.get("report_id")
+        uploaded_photo = request.FILES.get("photo")
+        face_dist = request.data.get("face_distance", 0.5)
+        try:
+            face_dist = float(face_dist)
+        except (ValueError, TypeError):
+            face_dist = 0.5
+
+        if not report_id:
+            return Response({"error": "Report ID is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            target_report = PersonReport.objects.get(pk=report_id)
+        except PersonReport.DoesNotExist:
+            return Response({"error": "Target report not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        if decision == "NOT_FOUND":
+            return Response({
+                "status": "NOT_FOUND",
+                "message": "Result marked as not a match.",
+            })
+
+        if decision == "FOUND":
+            from reports.models import ReportPhoto
+            from .services import save_photo_and_match, _notify_for_match
+
+            # 1. Create a counter-report with the confirmation
+            counterpart_kind = "FOUND" if target_report.kind == "MISSING" else "MISSING"
+            counterpart_report = PersonReport.objects.create(
+                created_by=request.user,
+                kind=counterpart_kind,
+                status=PersonReport.Status.VERIFIED,
+                name=f"Verified match for {target_report.name or 'Report #' + str(target_report.pk)}",
+                last_seen_place=target_report.last_seen_place or "Spotted via search",
+                description=f"Confirmed face match with {target_report.kind.lower()} report #{target_report.pk} ({target_report.name or 'Unknown'}).",
+                colour=target_report.colour,
+                height=target_report.height,
+                age=target_report.age,
+                gender=target_report.gender,
+            )
+
+            # 2. Save uploaded photo under this new report if provided
+            new_photo = None
+            if uploaded_photo:
+                try:
+                    new_photo = save_photo_and_match(counterpart_report, uploaded_photo)
+                except Exception as photo_err:
+                    logger.warning("Could not process search photo for match: %s", photo_err)
+
+            if not new_photo and target_report.photos.exists():
+                source_p = target_report.photos.first()
+                if source_p and source_p.photo:
+                    try:
+                        new_photo = ReportPhoto.objects.create(
+                            report=counterpart_report,
+                            photo=source_p.photo,
+                            face_encoding=source_p.face_encoding,
+                            processing_status=source_p.processing_status,
+                        )
+                    except Exception as copy_err:
+                        logger.warning("Could not duplicate photo for match: %s", copy_err)
+
+            # 3. Create verified FaceMatch or SimilarReportMatch
+            if target_report.kind == "MISSING" and counterpart_kind == "FOUND":
+                missing_rep, found_rep = target_report, counterpart_report
+                missing_p = target_report.photos.first()
+                found_p = new_photo
+                match, created = FaceMatch.objects.get_or_create(
+                    missing_report=missing_rep,
+                    found_report=found_rep,
+                    defaults={
+                        "missing_photo": missing_p,
+                        "found_photo": found_p,
+                        "face_distance": face_dist,
+                        "review_status": FaceMatch.ReviewStatus.VERIFIED,
+                        "reviewed_by": request.user,
+                    }
+                )
+                if not created:
+                    match.review_status = FaceMatch.ReviewStatus.VERIFIED
+                    match.reviewed_by = request.user
+                    match.save(update_fields=["review_status", "reviewed_by"])
+                _notify_for_match(match)
+            else:
+                low, high = sorted([target_report, counterpart_report], key=lambda r: r.pk)
+                SimilarReportMatch.objects.get_or_create(
+                    report_low=low,
+                    report_high=high,
+                    defaults={
+                        "source_photo": low.photos.first(),
+                        "matched_photo": high.photos.first(),
+                        "face_distance": face_dist,
+                        "review_status": SimilarReportMatch.ReviewStatus.VERIFIED,
+                    }
+                )
+
+            # Update target report status
+            target_report.status = PersonReport.Status.VERIFIED
+            target_report.save(update_fields=["status"])
+
+            return Response({
+                "status": "FOUND",
+                "message": "Match successfully recorded and saved to Matched cases!",
+                "report_id": counterpart_report.pk,
+            })
+
+        return Response({"error": "Invalid decision. Choose FOUND or NOT_FOUND."}, status=status.HTTP_400_BAD_REQUEST)

@@ -48,6 +48,21 @@ export default function Dashboard() {
 
   useEffect(() => { void load() }, [])
 
+  const getReportPhotoUrl = (report: ApiReport) => {
+    if (report.photos?.[0]?.photo) {
+      return absolutePhoto(report.photos[0].photo)
+    }
+    const match = report.name?.match(/report\s+(\d+)/i)
+    if (match) {
+      const parentId = Number(match[1])
+      const parent = reports.find((r) => r.id === parentId)
+      if (parent?.photos?.[0]?.photo) {
+        return absolutePhoto(parent.photos[0].photo)
+      }
+    }
+    return ''
+  }
+
   return (
     <>
       <div className="page" style={{ maxWidth: 1080, margin: '0 auto' }}>
@@ -100,11 +115,12 @@ export default function Dashboard() {
                   }}
                 >
                   <Photo
-                    src={absolutePhoto(report.photos?.[0]?.photo)}
+                    src={getReportPhotoUrl(report)}
                     alt={report.name || 'Person'}
                     style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                   />
                 </div>
+
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                     <strong style={{ fontSize: 18, color: 'var(--ink)' }}>{report.name || 'Unknown'}</strong>

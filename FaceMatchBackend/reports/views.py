@@ -118,7 +118,41 @@ class FoundReportListCreateView(generics.ListCreateAPIView):
         return _reports_for_kind("FOUND", self.request)
 
     def perform_create(self, serializer):
-        serializer.save(kind="FOUND")
+        report = serializer.save(kind="FOUND")
+        # If no photo was attached, but this is a sighting for a known report, copy parent photo
+        if not report.photos.exists():
+            import re
+            parent_id = self.request.data.get("sighted_report_id")
+            if not parent_id:
+                m = re.search(r"report\s+(\d+)", report.name or "", re.IGNORECASE)
+                if m:
+                    parent_id = m.group(1)
+            if parent_id:
+                try:
+                    parent = PersonReport.objects.filter(pk=int(parent_id)).first()
+                    if parent and parent.photos.exists():
+                        p_photo = parent.photos.first()
+                        if p_photo and p_photo.photo:
+                            from reports.models import ReportPhoto
+                            from matching.models import FaceMatch
+                            new_p = ReportPhoto.objects.create(
+                                report=report,
+                                photo=p_photo.photo,
+                                face_encoding=p_photo.face_encoding,
+                                processing_status=p_photo.processing_status,
+                            )
+                            FaceMatch.objects.get_or_create(
+                                missing_report=parent,
+                                found_report=report,
+                                defaults={
+                                    "missing_photo": p_photo,
+                                    "found_photo": new_p,
+                                    "face_distance": 0.0,
+                                    "review_status": FaceMatch.ReviewStatus.VERIFIED,
+                                }
+                            )
+                except Exception as exc:
+                    logger.warning("Could not auto-copy photo for sighting report #%d: %s", report.pk, exc)
 
 
 class FoundReportDetailView(generics.RetrieveDestroyAPIView):

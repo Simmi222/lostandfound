@@ -1,18 +1,30 @@
 import { useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { isLoggedIn, searchByName, searchByPhoto, absolutePhoto, type Match, type Person } from '../api'
-import { Photo } from '../components/ui'
+import {
+  isLoggedIn,
+  searchByName,
+  searchByPhoto,
+  recordMatchDecision,
+  absolutePhoto,
+  type Match,
+  type Person,
+} from '../api'
+import { Photo, Icon } from '../components/ui'
 
 export default function Search() {
   const location = useLocation()
   const [query, setQuery] = useState('')
   const [nameResults, setNameResults] = useState<Person[]>([])
   const [photoResults, setPhotoResults] = useState<Match[]>([])
+  const [searchPhotoFile, setSearchPhotoFile] = useState<File | null>(null)
   const [photoMessage, setPhotoMessage] = useState('')
   const [searchedName, setSearchedName] = useState(false)
   const [searchedPhoto, setSearchedPhoto] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const [decisions, setDecisions] = useState<
+    Record<number, { busy: boolean; status: 'FOUND' | 'NOT_FOUND'; message?: string; reportId?: number }>
+  >({})
 
   const authenticated = isLoggedIn()
 
@@ -27,6 +39,7 @@ export default function Search() {
     setSearchedName(true)
     setSearchedPhoto(false)
     setPhotoResults([])
+    setSearchPhotoFile(null)
     try {
       const results = await searchByName(query)
       setNameResults(results)
@@ -48,6 +61,8 @@ export default function Search() {
     setSearchedPhoto(true)
     setSearchedName(false)
     setNameResults([])
+    setSearchPhotoFile(file)
+    setDecisions({})
     try {
       const data = await searchByPhoto(file)
       setPhotoResults(data.matches)
@@ -58,6 +73,33 @@ export default function Search() {
       setBusy(false)
     }
   }
+
+  const handleDecision = async (reportId: number, decision: 'FOUND' | 'NOT_FOUND', distance: number) => {
+    setDecisions((prev) => ({
+      ...prev,
+      [reportId]: { busy: true, status: decision },
+    }))
+    try {
+      const res = await recordMatchDecision(reportId, decision, searchPhotoFile, distance)
+      setDecisions((prev) => ({
+        ...prev,
+        [reportId]: {
+          busy: false,
+          status: decision,
+          message: res.message || (decision === 'FOUND' ? 'Match saved to Matched cases!' : 'Marked as not a match.'),
+          reportId: res.report_id,
+        },
+      }))
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to record decision.')
+      setDecisions((prev) => {
+        const next = { ...prev }
+        delete next[reportId]
+        return next
+      })
+    }
+  }
+
 
   useEffect(() => {
     const file = (location.state as { photoFile?: File } | null)?.photoFile
@@ -202,81 +244,163 @@ export default function Search() {
           </Link>
         ))}
 
-        {photoResults.map((match) => (
-          <Link
-            key={`${match.report_id}-${match.photo_id}`}
-            to={`/person/${match.report_id}`}
-            className="card"
-            style={{
-              display: 'flex',
-              gap: 16,
-              alignItems: 'center',
-              padding: '14px 18px',
-              borderRadius: 14,
-              border: '1px solid rgba(240, 169, 74, 0.3)',
-              background: 'linear-gradient(145deg, rgba(38, 26, 18, 0.6), rgba(26, 17, 12, 0.85))',
-            }}
-          >
+        {photoResults.map((match) => {
+          const dec = decisions[match.report_id]
+          const conf = Math.round(
+            match.face_distance <= 0.6
+              ? 100 - (match.face_distance / 0.6) * 25
+              : Math.max(10, 75 - ((match.face_distance - 0.6) / 0.4) * 65)
+          )
+
+          return (
             <div
+              key={`${match.report_id}-${match.photo_id}`}
+              className="card"
               style={{
-                width: 68,
-                height: 82,
-                borderRadius: 10,
-                overflow: 'hidden',
-                flexShrink: 0,
-                background: '#231810',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 16,
+                padding: '20px 22px',
+                borderRadius: 16,
+                border: '1px solid rgba(240, 169, 74, 0.35)',
+                background: 'linear-gradient(145deg, rgba(38, 26, 18, 0.75), rgba(26, 17, 12, 0.95))',
               }}
             >
-              <Photo
-                src={absolutePhoto(match.photo_url)}
-                alt={match.name}
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-              />
-            </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                <strong style={{ fontSize: 18, color: 'var(--ink)' }}>{match.name}</strong>
-                <span
-                  className="mono"
+              <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+                <div
                   style={{
-                    fontSize: 11,
-                    padding: '2px 8px',
-                    borderRadius: 999,
-                    background: 'rgba(240, 169, 74, 0.18)',
-                    color: 'var(--candle)',
-                    border: '1px solid rgba(240, 169, 74, 0.35)',
-                    fontWeight: 600,
+                    width: 76,
+                    height: 92,
+                    borderRadius: 10,
+                    overflow: 'hidden',
+                    flexShrink: 0,
+                    background: '#231810',
                   }}
                 >
-                  {Math.round(
-                    match.face_distance <= 0.6
-                      ? 100 - (match.face_distance / 0.6) * 25
-                      : Math.max(10, 75 - ((match.face_distance - 0.6) / 0.4) * 65)
-                  )}% MATCH CONFIDENCE
-                </span>
-                {match.age !== null && (
-                  <span className="mono faint" style={{ fontSize: 12 }}>{match.age} yrs</span>
-                )}
+                  <Photo
+                    src={absolutePhoto(match.photo_url)}
+                    alt={match.name}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                    <Link
+                      to={`/person/${match.report_id}`}
+                      style={{ fontSize: 19, fontWeight: 700, color: 'var(--ink)', textDecoration: 'none' }}
+                    >
+                      {match.name}
+                    </Link>
+                    <span
+                      className="mono"
+                      style={{
+                        fontSize: 11,
+                        padding: '3px 10px',
+                        borderRadius: 999,
+                        background: 'rgba(240, 169, 74, 0.18)',
+                        color: 'var(--candle)',
+                        border: '1px solid rgba(240, 169, 74, 0.35)',
+                        fontWeight: 600,
+                      }}
+                    >
+                      {conf}% MATCH CONFIDENCE
+                    </span>
+                    {match.age !== null && (
+                      <span className="mono faint" style={{ fontSize: 12 }}>{match.age} yrs</span>
+                    )}
+                  </div>
+                  <p className="muted" style={{ fontSize: 13, marginTop: 4 }}>
+                    Last seen · {match.last_seen_place}
+                  </p>
+                  <p
+                    className="faint"
+                    style={{
+                      fontSize: 13,
+                      marginTop: 4,
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                    }}
+                  >
+                    {match.description}
+                  </p>
+                </div>
               </div>
-              <p className="muted" style={{ fontSize: 13, marginTop: 4 }}>
-                Last seen · {match.last_seen_place}
-              </p>
-              <p
-                className="faint"
+
+              {/* Mandatory decision section: Find and Not Find */}
+              <div
                 style={{
-                  fontSize: 13,
-                  marginTop: 4,
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
+                  borderTop: '1px solid rgba(243, 231, 211, 0.08)',
+                  paddingTop: 14,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  flexWrap: 'wrap',
+                  gap: 12,
                 }}
               >
-                {match.description}
-              </p>
+                <div>
+                  <span className="mono" style={{ fontSize: 12, color: 'var(--ink)' }}>
+                    Did you find this person? (Select to verify match)
+                  </span>
+                  <p className="faint" style={{ fontSize: 12, marginTop: 2 }}>
+                    Clicking &ldquo;Found&rdquo; saves and stores this match in the Matched registry.
+                  </p>
+                </div>
+
+                {dec?.status === 'FOUND' ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <span
+                      className="mono"
+                      style={{
+                        color: 'var(--candle)',
+                        fontSize: 12,
+                        padding: '4px 10px',
+                        borderRadius: 6,
+                        background: 'rgba(240, 169, 74, 0.15)',
+                        border: '1px solid var(--candle)',
+                      }}
+                    >
+                      ✓ {dec.message || 'Match Confirmed & Stored'}
+                    </span>
+                    <Link to="/matches" className="btn btn-light btn-sm">
+                      View in Matched Cases →
+                    </Link>
+                  </div>
+                ) : dec?.status === 'NOT_FOUND' ? (
+                  <span className="mono faint" style={{ fontSize: 12, padding: '4px 10px' }}>
+                    ✕ Marked as Not Found
+                  </span>
+                ) : (
+                  <div style={{ display: 'flex', gap: 10 }}>
+                    <button
+                      type="button"
+                      className="btn btn-light btn-sm"
+                      disabled={dec?.busy}
+                      onClick={() => handleDecision(match.report_id, 'FOUND', match.face_distance)}
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                    >
+                      <Icon.check size={14} />
+                      {dec?.busy ? 'Saving to Matched…' : 'Found (Confirm Match)'}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-ghost btn-sm"
+                      disabled={dec?.busy}
+                      onClick={() => handleDecision(match.report_id, 'NOT_FOUND', match.face_distance)}
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                    >
+                      <Icon.x size={14} />
+                      Not Found
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
-          </Link>
-        ))}
+          )
+        })}
       </div>
     </div>
   )
 }
+

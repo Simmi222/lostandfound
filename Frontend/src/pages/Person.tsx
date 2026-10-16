@@ -47,7 +47,12 @@ export default function PersonPage() {
     getPerson(id).then((p) => setPerson(p ?? null))
   }, [id])
 
-  if (person === undefined) return <div className="page" />
+  if (person === undefined)
+    return (
+      <div className="page" style={{ display: 'grid', placeItems: 'center', textAlign: 'center', minHeight: '60vh' }}>
+        <p className="mono candle">Loading case story…</p>
+      </div>
+    )
   if (person === null)
     return (
       <div className="page" style={{ display: 'grid', placeItems: 'center', textAlign: 'center' }}>
@@ -100,7 +105,8 @@ export default function PersonPage() {
 
           <div className="person-body">
             <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-              <p className="mono candle">Missing from {person.city}</p>
+              <p className="mono candle">{person.kind === 'FOUND' ? 'Sighted in' : 'Missing from'} {person.city || person.lastSeenPlace || 'Unknown location'}</p>
+
               <SplitTitle className="h2" text={person.name} delay={0.3} />
               <p className="mono faint">Time apart</p>
               <p className="days-big" style={{ fontSize: 'clamp(32px, 4vw, 52px)' }}>

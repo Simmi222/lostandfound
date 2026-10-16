@@ -1,14 +1,31 @@
 import { useEffect, useState } from 'react'
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
+import { getCurrentUser, logout } from '../api'
 import { Icon, Magnetic } from './ui'
 
 export function Nav() {
   const [scrolled, setScrolled] = useState(false)
   const [open, setOpen] = useState(false)
   const [loggedIn, setLoggedIn] = useState(() => Boolean(localStorage.getItem('access')))
+  const [user, setUser] = useState(() => getCurrentUser())
   const loc = useLocation()
   const navigate = useNavigate()
+
+  useEffect(() => {
+    const syncAuth = () => {
+      setLoggedIn(Boolean(localStorage.getItem('access')))
+      setUser(getCurrentUser())
+    }
+    syncAuth()
+    window.addEventListener('auth-change', syncAuth)
+    window.addEventListener('storage', syncAuth)
+    return () => {
+      window.removeEventListener('auth-change', syncAuth)
+      window.removeEventListener('storage', syncAuth)
+    }
+  }, [loc.pathname])
+
 
   const [searchVal, setSearchVal] = useState(() => {
     return new URLSearchParams(window.location.search).get('q') || ''
@@ -116,9 +133,29 @@ export function Nav() {
             Report someone missing
           </Link>
         </Magnetic>
-        {loggedIn
-          ? <button className="btn btn-ghost btn-sm" onClick={() => { localStorage.clear(); setLoggedIn(false); window.location.href = '/login' }}>Sign out</button>
-          : <Link to="/login" className="btn btn-ghost btn-sm">Sign in</Link>}
+        {loggedIn ? (
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10, marginLeft: 6 }}>
+            <span className="mono faint" style={{ fontSize: 11 }}>
+              Signed in (<b style={{ color: 'var(--candle)' }}>{user?.username || 'You'}</b>)
+            </span>
+            <button
+              className="btn btn-ghost btn-sm"
+              onClick={() => {
+                logout()
+                setLoggedIn(false)
+                setUser(null)
+                navigate('/login')
+              }}
+            >
+              Sign out
+            </button>
+          </div>
+        ) : (
+          <Link to="/login" className="btn btn-ghost btn-sm">
+            Sign in
+          </Link>
+        )}
+
       </nav>
       <button className="nav-menu-btn btn btn-ghost btn-sm" onClick={() => setOpen((o) => !o)} aria-label="Menu" aria-expanded={open}>
         {open ? <Icon.x /> : <Icon.menu />}

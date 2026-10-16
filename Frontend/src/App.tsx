@@ -66,17 +66,22 @@ export default function App() {
       <AnimatePresence
         mode="wait"
         onExitComplete={() => {
-          lenis?.scrollTo(0, { immediate: true })
-          window.scrollTo(0, 0)
+          try {
+            lenis?.scrollTo(0, { immediate: true })
+            window.scrollTo(0, 0)
+          } catch {
+            window.scrollTo(0, 0)
+          }
         }}
       >
         <motion.main
           key={location.pathname}
-          initial={{ opacity: 0, filter: 'blur(8px)' }}
-          animate={{ opacity: 1, filter: 'blur(0px)', transitionEnd: { filter: 'none' } }}
-          exit={{ opacity: 0, filter: 'blur(8px)' }}
-          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
         >
+
           <Routes location={location}>
             <Route path="/" element={<Home ready={!intro} />} />
             <Route path="/stories" element={<Stories />} />

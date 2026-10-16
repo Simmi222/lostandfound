@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
-import { isLoggedIn, submitReport, type CaseReport } from '../api'
+import { isLoggedIn, submitReport, submitStrangerReport, type CaseReport, type StrangerReport } from '../api'
 import { PhotoDrop } from '../components/FaceScan'
 import { Icon, SplitTitle } from '../components/ui'
 
@@ -14,6 +14,10 @@ const empty: CaseReport = {
 const photoChecks = ['Face detected', 'Photo is clear enough to recognise', 'No heavy filters or obstructions', 'Ready to share with searchers']
 
 export default function Report() {
+  const [searchParams] = useSearchParams()
+  const initialType = searchParams.get('type') === 'relative' ? 'relative' : searchParams.get('type') === 'stranger' ? 'stranger' : 'choose'
+  const [reportTarget, setReportTarget] = useState<'choose' | 'relative' | 'stranger'>(initialType)
+
   const [step, setStep] = useState(0)
   const [dir, setDir] = useState(1)
   const [form, setForm] = useState<CaseReport>(empty)
@@ -27,6 +31,7 @@ export default function Report() {
   const [caseId, setCaseId] = useState<string | null>(null)
 
   const set = <K extends keyof CaseReport>(k: K, v: CaseReport[K]) => setForm((f) => ({ ...f, [k]: v }))
+
 
   useEffect(() => {
     if (!mainPhoto) return
@@ -94,7 +99,7 @@ export default function Report() {
         <p className="eyebrow mono" style={{ marginBottom: 14 }}>Sign in required</p>
         <h1 className="h2" style={{ marginBottom: 20 }}>Please sign in to post a report</h1>
         <p className="muted" style={{ marginBottom: 32, lineHeight: 1.6 }}>
-          To create and manage a missing-person report and receive updates on potential photo matches, an account is required.
+          To create and manage a report and receive updates on potential photo matches, an account is required.
         </p>
         <div style={{ display: 'flex', gap: 14, justifyContent: 'center' }}>
           <Link to="/login" className="btn btn-light">Sign in</Link>
@@ -106,15 +111,111 @@ export default function Report() {
 
   if (caseId) return <Lit name={form.name} caseId={caseId} />
 
+  if (reportTarget === 'choose') {
+    return (
+      <div className="page" style={{ maxWidth: 860, margin: '20px auto 60px' }}>
+        <div style={{ textAlign: 'center', marginBottom: 40 }}>
+          <p className="eyebrow mono" style={{ marginBottom: 14 }}>Report someone</p>
+          <h1 className="h2" style={{ marginBottom: 16 }}>Who would you like to report?</h1>
+          <p className="muted" style={{ maxWidth: '54ch', margin: '0 auto', fontSize: 16, lineHeight: 1.6 }}>
+            Please select an option. Relative reports are for family members, while Stranger reports are for sighted people on the street.
+          </p>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 24 }}>
+          {/* Option 1: Relative */}
+          <div
+            className="panel card"
+            onClick={() => setReportTarget('relative')}
+            style={{
+              padding: '36px 30px',
+              borderRadius: 20,
+              cursor: 'pointer',
+              border: '1px solid rgba(240, 169, 74, 0.4)',
+              background: 'linear-gradient(145deg, rgba(38, 26, 18, 0.8), rgba(26, 17, 12, 0.95))',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 16,
+              transition: 'transform 0.2s, box-shadow 0.2s',
+            }}
+          >
+            <div style={{ width: 50, height: 50, borderRadius: 12, background: 'rgba(240, 169, 74, 0.15)', display: 'grid', placeItems: 'center', color: 'var(--candle)' }}>
+              <Icon.users size={24} />
+            </div>
+            <div>
+              <h2 className="h3" style={{ fontSize: 22, color: 'var(--ink)' }}>A Relative / Family Member</h2>
+              <span className="mono" style={{ fontSize: 11, color: 'var(--candle)', display: 'block', marginTop: 4 }}>
+                Missing Person Report
+              </span>
+            </div>
+            <p className="faint" style={{ fontSize: 14, lineHeight: 1.6, flex: 1 }}>
+              I am searching for a missing loved one (child, parent, spouse, relative). I can share their portraits, physical traits, and words from the heart.
+            </p>
+            <button type="button" className="btn btn-light btn-sm" style={{ alignSelf: 'flex-start' }}>
+              Continue as Relative →
+            </button>
+          </div>
+
+          {/* Option 2: Stranger */}
+          <div
+            className="panel card"
+            onClick={() => setReportTarget('stranger')}
+            style={{
+              padding: '36px 30px',
+              borderRadius: 20,
+              cursor: 'pointer',
+              border: '1px solid rgba(159, 216, 181, 0.4)',
+              background: 'linear-gradient(145deg, rgba(20, 36, 28, 0.8), rgba(14, 26, 20, 0.95))',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 16,
+              transition: 'transform 0.2s, box-shadow 0.2s',
+            }}
+          >
+            <div style={{ width: 50, height: 50, borderRadius: 12, background: 'rgba(159, 216, 181, 0.15)', display: 'grid', placeItems: 'center', color: 'var(--hope)' }}>
+              <Icon.eye size={24} />
+            </div>
+            <div>
+              <h2 className="h3" style={{ fontSize: 22, color: 'var(--ink)' }}>A Sighted Stranger</h2>
+              <span className="mono" style={{ fontSize: 11, color: 'var(--hope)', display: 'block', marginTop: 4 }}>
+                Sighting / Found Report
+              </span>
+            </div>
+            <p className="faint" style={{ fontSize: 14, lineHeight: 1.6, flex: 1 }}>
+              I saw a stranger on the road, station, or public place who looks lost or vulnerable. Photo is mandatory so our biometric AI can identify them against family reports.
+            </p>
+            <button type="button" className="btn btn-ghost btn-sm" style={{ alignSelf: 'flex-start', borderColor: 'var(--hope)', color: 'var(--hope)' }}>
+              Continue as Stranger →
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (reportTarget === 'stranger') {
+    return <StrangerReportForm onBack={() => setReportTarget('choose')} />
+  }
+
   const first = form.name.trim().split(' ')[0] || 'them'
 
   return (
     <div className="page">
+      <button
+        type="button"
+        onClick={() => setReportTarget('choose')}
+        className="btn btn-ghost btn-sm"
+        style={{ marginBottom: 24, display: 'inline-flex', gap: 8, alignItems: 'center' }}
+      >
+        <Icon.back size={14} /> Back to options (Relative / Stranger)
+      </button>
+
       <div style={{ maxWidth: 1180, margin: '0 auto 56px' }}>
         <p className="eyebrow mono" style={{ marginBottom: 18 }}>Report someone missing</p>
         <SplitTitle className="h2" text="Let’s bring them home, together." />
       </div>
       <div className="report">
+
         <nav className="steps" aria-label="Progress">
           {steps.map((s, i) => (
             <button
@@ -372,3 +473,295 @@ function Lit({ name, caseId }: { name: string; caseId: string }) {
     </div>
   )
 }
+
+function StrangerReportForm({ onBack }: { onBack: () => void }) {
+  const [photo, setPhoto] = useState<File | null>(null)
+  const [strangerName, setStrangerName] = useState('')
+  const [contactPhone, setContactPhone] = useState('')
+  const [whereSeen, setWhereSeen] = useState('')
+  const [city, setCity] = useState('')
+  const [wearing, setWearing] = useState('')
+  const [height, setHeight] = useState('')
+  const [age, setAge] = useState('')
+  const [gender, setGender] = useState('')
+  const [marks, setMarks] = useState('')
+  const [details, setDetails] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [caseId, setCaseId] = useState<string | null>(null)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!photo) {
+      setPreviewUrl(null)
+      return
+    }
+    const url = URL.createObjectURL(photo)
+    setPreviewUrl(url)
+    return () => URL.revokeObjectURL(url)
+  }, [photo])
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError(null)
+    if (!photo) {
+      setError('Stranger photo is mandatory for biometric face matching.')
+      return
+    }
+    if (!strangerName.trim()) {
+      setError("Stranger's name is mandatory (type 'Unknown' if not known).")
+      return
+    }
+    if (!contactPhone.trim()) {
+      setError('Contact phone number is mandatory so volunteers can reach you.')
+      return
+    }
+    if (!whereSeen.trim()) {
+      setError('Location where they were seen is mandatory.')
+      return
+    }
+
+    setSubmitting(true)
+    try {
+      const res = await submitStrangerReport({
+        photo,
+        strangerName,
+        contactPhone,
+        whereSeen,
+        city,
+        wearing,
+        height,
+        age,
+        gender,
+        marks,
+        details,
+      })
+      setCaseId(res.caseId)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to submit stranger report.')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  if (caseId) {
+    return (
+      <div className="page" style={{ display: 'grid', placeItems: 'center', textAlign: 'center' }}>
+        <div className="panel" style={{ maxWidth: 640, padding: '40px 32px', display: 'flex', flexDirection: 'column', gap: 18, alignItems: 'center' }}>
+          <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'rgba(159, 216, 181, 0.15)', display: 'grid', placeItems: 'center', color: 'var(--hope)' }}>
+            <Icon.check size={32} />
+          </div>
+          <p className="mono candle">{caseId}</p>
+          <h2 className="h3">Thank you for reporting this sighting.</h2>
+          <p className="muted" style={{ lineHeight: 1.6 }}>
+            The stranger photo has been submitted and facial recognition is currently comparing it against all missing family reports. If a match is verified, the family and local coordinators will be alerted.
+          </p>
+          <div style={{ display: 'flex', gap: 12, marginTop: 12 }}>
+            <Link to="/dashboard" className="btn btn-light btn-sm">View in Dashboard</Link>
+            <Link to="/matches" className="btn btn-ghost btn-sm">View Matched Cases</Link>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="page" style={{ maxWidth: 780, margin: '0 auto' }}>
+      <button type="button" onClick={onBack} className="btn btn-ghost btn-sm" style={{ marginBottom: 24, display: 'inline-flex', gap: 8, alignItems: 'center' }}>
+        <Icon.back size={14} /> Back to options (Relative / Stranger)
+      </button>
+
+      <div style={{ marginBottom: 32 }}>
+        <p className="eyebrow mono" style={{ color: 'var(--hope)', marginBottom: 12 }}>Stranger Sighting Report</p>
+        <SplitTitle className="h2" text="Help a stranger find their way home." />
+        <p className="muted" style={{ marginTop: 12, maxWidth: '58ch' }}>
+          Stranger photo, name/alias, contact number, and location are mandatory. All other details like clothes and height are optional.
+        </p>
+      </div>
+
+      <form className="panel" onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 24, padding: '32px' }}>
+        {error && <p className="form-error">{error}</p>}
+
+        {/* 1. PHOTO (MANDATORY) */}
+        <div className="field">
+          <label className="mono" style={{ color: 'var(--candle)' }}>
+            1. Stranger’s Photo * (Mandatory for Face Matching)
+          </label>
+          <div style={{ display: 'flex', gap: 18, alignItems: 'center', flexWrap: 'wrap', marginTop: 8 }}>
+            <label
+              className="btn btn-light btn-sm"
+              style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 8 }}
+            >
+              <Icon.camera size={16} /> Choose Photo
+              <input
+                type="file"
+                accept="image/*"
+                hidden
+                onChange={(e) => setPhoto(e.target.files?.[0] || null)}
+              />
+            </label>
+            {photo && (
+              <span className="mono faint" style={{ fontSize: 12 }}>
+                {photo.name} ({(photo.size / 1024).toFixed(0)} KB)
+              </span>
+            )}
+          </div>
+          {previewUrl && (
+            <div style={{ marginTop: 14, width: 140, height: 160, borderRadius: 12, overflow: 'hidden', border: '1px solid var(--candle)' }}>
+              <img src={previewUrl} alt="Stranger preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            </div>
+          )}
+          <p className="faint" style={{ fontSize: 12, marginTop: 6 }}>
+            A front-facing, unblurred photo gives the highest facial recognition accuracy.
+          </p>
+        </div>
+
+        {/* 2. STRANGER'S NAME (MANDATORY) */}
+        <div className="field">
+          <label className="mono" htmlFor="stranger-name" style={{ color: 'var(--candle)' }}>
+            2. Stranger’s Name * (Mandatory)
+          </label>
+          <input
+            id="stranger-name"
+            className="input"
+            value={strangerName}
+            onChange={(e) => setStrangerName(e.target.value)}
+            placeholder="Name they gave, or type 'Unknown'"
+            required
+          />
+        </div>
+
+        {/* 3. REPORTER'S PHONE NUMBER (MANDATORY) */}
+        <div className="field">
+          <label className="mono" htmlFor="contact-phone" style={{ color: 'var(--candle)' }}>
+            3. Contact Phone Number * (Mandatory)
+          </label>
+          <input
+            id="contact-phone"
+            className="input"
+            type="tel"
+            value={contactPhone}
+            onChange={(e) => setContactPhone(e.target.value)}
+            placeholder="e.g. +91 98765 43210"
+            required
+          />
+          <p className="faint" style={{ fontSize: 12, marginTop: 4 }}>
+            Kept confidential. Only used by volunteers/authorities if a match is confirmed.
+          </p>
+        </div>
+
+        {/* 4. WHERE YOU SAW THEM (MANDATORY) */}
+        <div className="field">
+          <label className="mono" htmlFor="where-seen" style={{ color: 'var(--candle)' }}>
+            4. Where Did You See Them? * (Mandatory)
+          </label>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14 }}>
+            <input
+              id="where-seen"
+              className="input"
+              value={whereSeen}
+              onChange={(e) => setWhereSeen(e.target.value)}
+              placeholder="Landmark, station, market, street"
+              required
+            />
+            <input
+              id="stranger-city"
+              className="input"
+              value={city}
+              onChange={(e) => setCity(e.target.value)}
+              placeholder="City / Area (e.g. Mumbai, Dadar)"
+            />
+          </div>
+        </div>
+
+        {/* OPTIONAL FIELDS SECTION */}
+        <div style={{ borderTop: '1px solid var(--line)', paddingTop: 20 }}>
+          <p className="mono faint" style={{ marginBottom: 14 }}>
+            Optional Information (Fill if you remember, leave blank if unsure)
+          </p>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14 }}>
+            <div className="field">
+              <label className="mono faint" htmlFor="stranger-wearing">What were they wearing? (Optional)</label>
+              <input
+                id="stranger-wearing"
+                className="input"
+                value={wearing}
+                onChange={(e) => setWearing(e.target.value)}
+                placeholder="e.g. Blue shirt, grey pants, no footwear"
+              />
+            </div>
+            <div className="field">
+              <label className="mono faint" htmlFor="stranger-height">Estimated height (Optional)</label>
+              <input
+                id="stranger-height"
+                className="input"
+                value={height}
+                onChange={(e) => setHeight(e.target.value)}
+                placeholder="e.g. 5'6&quot; or Medium"
+              />
+            </div>
+            <div className="field">
+              <label className="mono faint" htmlFor="stranger-age">Estimated age (Optional)</label>
+              <input
+                id="stranger-age"
+                className="input"
+                type="number"
+                value={age}
+                onChange={(e) => setAge(e.target.value)}
+                placeholder="e.g. 30"
+              />
+            </div>
+            <div className="field">
+              <label className="mono faint" htmlFor="stranger-gender">Gender (Optional)</label>
+              <select
+                id="stranger-gender"
+                className="input"
+                value={gender}
+                onChange={(e) => setGender(e.target.value)}
+              >
+                <option value="">Select (optional)</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+                <option value="Unknown">Not sure</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="field" style={{ marginTop: 14 }}>
+            <label className="mono faint" htmlFor="stranger-marks">Identifying marks / conditions (Optional)</label>
+            <input
+              id="stranger-marks"
+              className="input"
+              value={marks}
+              onChange={(e) => setMarks(e.target.value)}
+              placeholder="e.g. Scar on forehead, limp, seemed confused"
+            />
+          </div>
+
+          <div className="field" style={{ marginTop: 14 }}>
+            <label className="mono faint" htmlFor="stranger-details">More details / notes (Optional)</label>
+            <textarea
+              id="stranger-details"
+              className="textarea"
+              style={{ minHeight: 80 }}
+              value={details}
+              onChange={(e) => setDetails(e.target.value)}
+              placeholder="Which way did they go, were they alone, what time of day…"
+            />
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, marginTop: 12 }}>
+          <button type="button" className="btn btn-ghost" onClick={onBack}>
+            Cancel
+          </button>
+          <button type="submit" className="btn btn-light" disabled={submitting}>
+            {submitting ? 'Submitting & Matching…' : 'Submit Stranger Report'}
+          </button>
+        </div>
+      </form>
+    </div>
+  )
+}
+
